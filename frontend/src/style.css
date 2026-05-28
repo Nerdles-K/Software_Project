@@ -1,0 +1,31 @@
+@import 'tailwindcss';
+
+/* VisiTalk — Child-friendly base variables */
+:root {
+  --color-child-bg: #FFF8E7;
+  --color-child-card: #FFFFFF;
+  --color-child-accent: #FF9F43;
+  --color-parent-bg: #F0F2F5;
+  --color-parent-card: #FFFFFF;
+  --color-parent-accent: #2E86DE;
+
+  --card-min-size: 100px;
+  --contrast-text: #1A1A2E;
+  --contrast-border: #333333;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Child mode: large touch targets, no text-heavy elements */
+.child-mode {
+  background: var(--color-child-bg);
+}
+
+/* Parent mode: professional, data-dense */
+.parent-mode {
+  background: var(--color-parent-bg);
+}

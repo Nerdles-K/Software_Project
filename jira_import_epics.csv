@@ -1,0 +1,4 @@
+Issue Type,Summary,Description,Priority,Labels
+Epic,Module A - PECS Builder,可视化沟通系统：帮助儿童通过图卡拖拽表达日常需求,Highest,R1
+Epic,Module B - Visual Schedule,可视化日程与任务执行：帮助儿童预知流程并逐步完成任务,Highest,R1
+Epic,Module C - Behavior Logger,行为记录与情绪分析报告：帮助家长记录触发点并生成周报,High,R2

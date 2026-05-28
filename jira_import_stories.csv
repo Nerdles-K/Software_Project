@@ -1,0 +1,124 @@
+Issue Type,Summary,Description,Priority,Story Points,Epic Name,Labels
+Story,"A-1: 儿童主界面大尺寸图卡分类","As a 儿童
+I want 在主界面看到大尺寸、字面化的图卡分类（吃/喝/玩/感受）
+So that 我可以快速找到想表达的内容
+
+AC:
+- 显示至少 4 个分类图卡（吃/喝/玩/感受）
+- 界面上无任何文字主导元素
+- 图卡尺寸不小于 100x100px，对比度 ≥ 4.5:1",Highest,5,Module A - PECS Builder,R1
+Story,"A-2: 儿童拖拽图卡拼出完整句子","As a 儿童
+I want 把图卡拖拽到顶部句条上，自动拼成""我想要 + 苹果""
+So that 我可以表达完整意图
+
+AC:
+- 拖拽至句条后按顺序显示图卡且无文字
+- 系统在 200ms 内给出轻微缩放视觉反馈，无声音
+- 误触屏幕其他区域 1 秒内不会清空句条",Highest,8,Module A - PECS Builder,R1
+Story,"A-4: 家长在家长模式下增删/排序图卡","As a 家长
+I want 在家长模式下增删图卡并调整排序
+So that 图卡库贴合我家孩子的真实词汇量
+
+AC:
+- 家长通过 PIN 进入家长模式后可新增、删除、拖拽排序图卡
+- 修改后儿童端主界面实时更新
+- 删除操作需二次确认弹窗",Highest,5,Module A - PECS Builder,R1
+Story,"A-5: 家长上传自家物品照片作为自定义图卡","As a 家长
+I want 上传自家物品的照片作为自定义图卡
+So that 儿童对图卡的识别率更高
+
+AC:
+- 支持上传 JPG/PNG，文件大小 ≤ 5MB
+- 上传成功后图卡出现在对应分类中
+- 上传失败时显示友好错误提示",Medium,8,Module A - PECS Builder,R2
+Story,"B-1: 家长用图卡组合出分步骤日程","As a 家长
+I want 用图卡组合出一个分步骤日程（例：去超市的 5 步）
+So that 孩子可以预知完整流程
+
+AC:
+- 家长可从图卡库中选择图卡并排序生成日程
+- 最多支持 10 个步骤
+- 保存后儿童端可查看",Highest,8,Module B - Visual Schedule,R1
+Story,"B-2: 儿童查看当前步骤高亮标识","As a 儿童
+I want 当前步骤以高亮显示，下一步骤以次高亮显示
+So that 我可以聚焦当前任务，不感到迷失
+
+AC:
+- 当前步骤图卡高亮（加边框/放大）
+- 其余步骤图卡明显变暗
+- 不超过 2 个步骤同时高亮",Highest,5,Module B - Visual Schedule,R1
+Story,"B-3: 儿童完成步骤后点击大复选框打勾","As a 儿童
+I want 完成一步后点击大尺寸复选框打勾
+So that 我获得完成感并自动进入下一步
+
+AC:
+- 点击复选框后该步骤标记为完成（打勾动效）
+- 高亮自动移动到下一步
+- 所有步骤完成后显示庆祝画面（可关闭声音）",High,3,Module B - Visual Schedule,R2
+Story,"B-4: 家长保存日程模板以便重复使用","As a 家长
+I want 把创建好的日程保存为模板（如：上学日 / 周末 / 看医生）
+So that 不需要每次重新创建
+
+AC:
+- 可保存日程为命名模板
+- 下次可一键加载并开始执行
+- 模板支持编辑和删除",High,5,Module B - Visual Schedule,R2
+Story,"C-1: 家长 3 次点击内完成事件记录","As a 家长
+I want 在 3 次点击内完成一次事件记录（情绪强度 + 触发标签 + 时间）
+So that 记录过程不打断我对孩子的照护
+
+AC:
+- 选择情绪强度（1-5 级）和触发标签后点击提交，全程 ≤ 3 次点击
+- 记录时间自动取当前时间（可手动调整）
+- 操作完成时长中位数 ≤ 15 秒",Highest,8,Module C - Behavior Logger,R2
+Story,"C-2: 家长记录页面与儿童模式视觉完全分离","As a 家长
+I want 行为记录页面的视觉风格与儿童模式完全不同
+So that 孩子不会察觉我在记录他的行为
+
+AC:
+- 家长端配色/布局与儿童端明显不同
+- 儿童端入口按钮不出现在家长记录页面
+- 退出家长模式需再次输入 PIN",Highest,3,Module C - Behavior Logger,R2
+Story,"C-3: 系统按周自动生成情绪趋势报告","As a 家长
+I want 每周自动生成情绪强度时间分布图与高频触发点 Top 3
+So that 就医时可以直接展示结构化数据
+
+AC:
+- 过去 7 天内有至少 3 条记录时自动生成周报
+- 显示情绪强度按日期折线图
+- 显示出现频次最高的 Top 3 触发标签
+- 数据范围对应自然周（周一至周日）",Highest,13,Module C - Behavior Logger,R3
+Story,"C-4: 家长把周报导出为 PDF 或分享链接","As a 家长
+I want 把周报导出为 PDF 或生成一次性分享链接
+So that 可以方便地给治疗师或医生查看
+
+AC:
+- PDF 可下载，包含图表和触发点摘要
+- 分享链接 24 小时后自动失效
+- 分享链接无需登录即可查看（只读）",High,5,Module C - Behavior Logger,R3
+Story,"C-5: 系统在连续 3 天出现同一触发点时提示家长","As a 家长
+I want 当同一触发点连续出现 3 天时收到系统提示
+So that 我可以提前干预，避免情绪升级
+
+AC:
+- 同一触发标签连续 3 个自然日均有记录时触发提示
+- 家长下次打开 App 时首页显示提示卡片
+- 提示可被手动关闭，关闭后不重复弹出直到新一轮触发",Medium,8,Module C - Behavior Logger,R3
+Story,"C-6: Child can record their emotional state in a private diary space","As a child
+I want to enter a private diary space and record how I feel today using emotion cards or colors
+So that I can express my feelings in my own way without needing to use words
+
+AC:
+- Child can access the diary from the main screen via an icon (no text label)
+- At least 5 emotion cards are available to choose from (happy / sad / angry / scared / calm)
+- Child can optionally add a color doodle after selecting an emotion card
+- Diary entries are only visible to the child; the parent view only shows whether an entry exists, not the content",High,5,Module C - Behavior Logger,R2
+Story,"C-7: Parent can enable or disable the child's private diary space","As a parent
+I want to enable or disable the private diary feature for my child in parent mode
+So that I can control whether this feature is shown to my child and know if they have used it
+
+AC:
+- Parent can toggle the diary entry point on/off in parent mode (default: off)
+- When enabled, a diary icon appears on the child's main screen
+- Parent view only shows ""child has/has not written a diary today"" — content is not accessible
+- Disabling the feature retains existing diary data and does not delete it",Medium,3,Module C - Behavior Logger,R2
