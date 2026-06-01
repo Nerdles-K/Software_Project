@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Kid Schedule Builder | Picture Card Steps</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: system-ui, 'Segoe UI', 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif;
+        }
+
+        body {
+            background: #f0f7ff;
+            margin: 0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .app-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .mode-bar {
+            background: white;
+            border-radius: 60px;
+            padding: 6px;
+            display: flex;
+            gap: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            margin-bottom: 28px;
+            justify-content: center;
+        }
+
+        .mode-btn {
+            flex: 1;
+            max-width: 200px;
+            border: none;
+            background: #f1f5f9;
+            font-size: 1.1rem;
+            font-weight: 600;
+            padding: 12px 16px;
+            border-radius: 48px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #334155;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .mode-btn.active {
+            background: #3b82f6;
+            color: white;
+            box-shadow: 0 4px 10px rgba(59,130,246,0.3);
+        }
+
+        .card {
+            background: white;
+            border-radius: 32px;
+            padding: 20px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+            margin-bottom: 24px;
+            transition: all 0.2s;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0 0 8px 0;
+            color: #0f172a;
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .badge {
+            background: #eef2ff;
+            padding: 6px 12px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #1e40af;
+        }
+
+        .library-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .card-item {
+            background: #fefce8;
+            border: 2px solid #fde047;
+            border-radius: 24px;
+            padding: 16px 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+
+        .card-item:hover {
+            transform: translateY(-4px);
+            background: #fffbeb;
+            border-color: #facc15;
+            box-shadow: 0 12px 20px rgba(0,0,0,0.1);
+        }
+
+        .card-emoji {
+            font-size: 3rem;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .card-label {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #422006;
+        }
+
+        .schedule-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin: 20px 0;
+            max-height: 460px;
+            overflow-y: auto;
+            padding-right: 6px;
+        }
+
+        .step-row {
+            background: #f8fafc;
+            border-radius: 60px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px 8px 20px;
+            border: 1px solid #e2e8f0;
+            transition: all 0.1s;
+        }
+
+        .step-number {
+            background: #cbd5e1;
+            color: #0f172a;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 60px;
+            font-weight: 700;
+            font-size: 1rem;
+        }
+
+        .step-icon {
+            font-size: 2rem;
+            min-width: 48px;
+            text-align: center;
+        }
+
+        .step-text {
+            flex: 1;
+            font-weight: 600;
+            font-size: 1rem;
+            color: #1e293b;
+        }
+
+        .step-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .icon-btn {
+            background: white;
+            border: none;
+            font-size: 1.2rem;
+            width: 36px;
+            height: 36px;
+            border-radius: 40px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.1s;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+        }
+
+        .icon-btn:hover {
+            background: #eef2ff;
+            transform: scale(0.96);
+        }
+
+        .remove-btn:hover {
+            background: #fee2e2;
+            color: #dc2626;
+            border-color: #fecaca;
+        }
+
+        .action-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 12px;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 48px;
+            font-weight: 700;
+            color: white;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            padding: 12px 24px;
+            border-radius: 48px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            color: #334155;
+        }
+
+        .btn-secondary:hover {
+            background: #e2e8f0;
+        }
+
+        .warning-txt {
+            color: #d97706;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .child-view {
+            background: #fef9e3;
+            border-radius: 48px;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .child-steps-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .child-step-card {
+            background: white;
+            border-radius: 48px;
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            box-shadow: 0 8px 18px rgba(0,0,0,0.1);
+            border-left: 12px solid #fbbf24;
+        }
+
+        .child-step-num {
+            background: #facc15;
+            width: 52px;
+            height: 52px;
+            border-radius: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #422006;
+        }
+
+        .child-step-icon {
+            font-size: 3rem;
+        }
+
+        .child-step-label {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #2d1b0b;
+        }
+
+        .empty-message {
+            background: #fff3e0;
+            border-radius: 60px;
+            padding: 40px;
+            text-align: center;
+            color: #b45309;
+            font-size: 1.2rem;
+        }
+
+        .toast-msg {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e293b;
+            color: white;
+            padding: 10px 24px;
+            border-radius: 60px;
+            font-size: 0.9rem;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 32px;
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+
+        @media (max-width: 680px) {
+            .step-row {
+                flex-wrap: wrap;
+                border-radius: 28px;
+                padding: 12px;
+            }
+            .step-actions {
+                margin-left: auto;
+            }
+            .child-step-label {
+                font-size: 1rem;
+            }
+            .child-step-icon {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <div class="mode-bar">
+        <button id="parentModeBtn" class="mode-btn active">👨‍👩 Parent Edit Mode</button>
+        <button id="childModeBtn" class="mode-btn">🧒 Child View Mode</button>
+    </div>
+
+    <!-- Parent View: edit schedule -->
+    <div id="parentView">
+        <div class="card">
+            <div class="section-title">
+                🖼️ Picture Card Library
+                <span class="badge">Click a card to add step</span>
+            </div>
+            <div class="library-grid" id="libraryGrid"></div>
+        </div>
+
+        <div class="card">
+            <div class="section-title">
+                📋 Step-by-Step Schedule
+                <span class="badge" id="stepCounter">0 / 10 steps</span>
+            </div>
+            <div id="scheduleListContainer" class="schedule-list">
+                <div style="color:#94a3b8; text-align:center; padding:20px;">No steps yet. Click cards above to add ➕</div>
+            </div>
+            <div class="action-bar">
+                <div>
+                    <button id="clearScheduleBtn" class="btn-secondary">🗑️ Clear all</button>
+                    <button id="loadExampleBtn" class="btn-secondary">📋 Load example (5 steps to supermarket)</button>
+                </div>
+                <div>
+                    <button id="saveScheduleBtn" class="btn-primary">💾 Save schedule (visible for child)</button>
+                </div>
+            </div>
+            <div class="warning-txt">※ Maximum 10 steps. Use ⬆️ ⬇️ to reorder. Save to update child view.</div>
+        </div>
+    </div>
+
+    <!-- Child View (read-only) -->
+    <div id="childView" style="display: none;">
+        <div class="child-view">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                <h2 style="margin:0;">🧸 My Daily Schedule</h2>
+                <span class="badge" style="background:#fde68a;">Follow the steps ✨</span>
+            </div>
+            <div id="childStepsContent" class="child-steps-grid"></div>
+        </div>
+    </div>
+    <footer>👪 Parent: combine picture cards → order steps → save. Child can then see the full routine.</footer>
+</div>
+<div id="toastMsg" class="toast-msg"></div>
+
+<script>
+    // ---------- Picture card library (English labels) ----------
+    const LIBRARY_CARDS = [
+        { id: "lib1", label: "Put on shoes", icon: "👟" },
+        { id: "lib2", label: "Get shopping bag", icon: "🛍️" },
+        { id: "lib3", label: "Go to supermarket", icon: "🚗" },
+        { id: "lib4", label: "Pick items", icon: "🛒" },
+        { id: "lib5", label: "Checkout", icon: "💰" },
+        { id: "lib6", label: "Go back home", icon: "🏠" },
+        { id: "lib7", label: "Wash hands", icon: "🧼" },
+        { id: "lib8", label: "Make shopping list", icon: "📝" },
+        { id: "lib9", label: "Pack bags", icon: "🛍️✨" },
+        { id: "lib10", label: "Pay", icon: "💳" },
+        { id: "lib11", label: "Get change", icon: "🪙" },
+        { id: "lib12", label: "Check cart", icon: "✅" }
+    ];
+
+    // ---------- Global state ----------
+    let scheduleSteps = [];      // each step: { stepId, cardLabel, cardIcon }
+
+    let currentMode = "parent";
+
+    // DOM elements
+    const parentViewDiv = document.getElementById('parentView');
+    const childViewDiv = document.getElementById('childView');
+    const parentModeBtn = document.getElementById('parentModeBtn');
+    const childModeBtn = document.getElementById('childModeBtn');
+    const libraryGrid = document.getElementById('libraryGrid');
+    const scheduleListContainer = document.getElementById('scheduleListContainer');
+    const stepCounterSpan = document.getElementById('stepCounter');
+    const clearScheduleBtn = document.getElementById('clearScheduleBtn');
+    const loadExampleBtn = document.getElementById('loadExampleBtn');
+    const saveScheduleBtn = document.getElementById('saveScheduleBtn');
+    const childStepsContent = document.getElementById('childStepsContent');
+    const toastMsgDiv = document.getElementById('toastMsg');
+
+    function showToast(message, isError = false) {
+        toastMsgDiv.textContent = message;
+        toastMsgDiv.style.backgroundColor = isError ? '#b91c1c' : '#0f172a';
+        toastMsgDiv.style.opacity = '1';
+        setTimeout(() => {
+            toastMsgDiv.style.opacity = '0';
+        }, 2000);
+    }
+
+    function generateStepId() {
+        return Date.now() + '-' + Math.random().toString(36).substr(2, 6);
+    }
+
+    function persistScheduleToLocalStorage() {
+        if (!scheduleSteps) return;
+        try {
+            localStorage.setItem('childScheduleSteps', JSON.stringify(scheduleSteps));
+            showToast('✅ Schedule saved! Child can now see the updated steps.', false);
+        } catch(e) {
+            showToast('Save failed, please try again', true);
+        }
+    }
+
+    function loadScheduleFromLocalStorage() {
+        const stored = localStorage.getItem('childScheduleSteps');
+        if (stored) {
+            try {
+                const parsed = JSON.parse(stored);
+                if (Array.isArray(parsed)) return parsed;
+            } catch(e) { console.warn(e); }
+        }
+        return null;
+    }
+
+    function getDefaultExampleSteps() {
+        return [
+            { stepId: generateStepId(), cardLabel: "Put on shoes", cardIcon: "👟" },
+            { stepId: generateStepId(), cardLabel: "Get shopping bag", cardIcon: "🛍️" },
+            { stepId: generateStepId(), cardLabel: "Go to supermarket", cardIcon: "🚗" },
+            { stepId: generateStepId(), cardLabel: "Pick items", cardIcon: "🛒" },
+            { stepId: generateStepId(), cardLabel: "Checkout", cardIcon: "💰" }
+        ];
+    }
+
+    function initializeSchedule() {
+        const saved = loadScheduleFromLocalStorage();
+        if (saved && saved.length > 0) {
+            scheduleSteps = saved;
+        } else {
+            scheduleSteps = getDefaultExampleSteps();
+            persistScheduleToLocalStorage();
+        }
+        renderParentSchedule();
+    }
+
+    function renderLibrary() {
+        libraryGrid.innerHTML = '';
+        LIBRARY_CARDS.forEach(card => {
+            const cardDiv = document.createElement('div');
+            cardDiv.className = 'card-item';
+            cardDiv.setAttribute('data-label', card.label);
+            cardDiv.setAttribute('data-icon', card.icon);
+            cardDiv.innerHTML = `
+                <span class="card-emoji">${card.icon}</span>
+                <div class="card-label">${escapeHtml(card.label)}</div>
+            `;
+            cardDiv.addEventListener('click', (e) => {
+                e.stopPropagation();
+                addStepToSchedule(card.label, card.icon);
+            });
+            libraryGrid.appendChild(cardDiv);
+        });
+    }
+
+    function addStepToSchedule(label, icon) {
+        if (scheduleSteps.length >= 10) {
+            showToast(`⚠️ Maximum steps reached (10/10). Remove some first.`, true);
+            return;
+        }
+        const newStep = {
+            stepId: generateStepId(),
+            cardLabel: label,
+            cardIcon: icon
+        };
+        scheduleSteps.push(newStep);
+        renderParentSchedule();
+        showToast(`➕ Added step: ${label}`, false);
+    }
+
+    function removeStep(stepId) {
+        const index = scheduleSteps.findIndex(s => s.stepId === stepId);
+        if (index !== -1) {
+            const removed = scheduleSteps[index];
+            scheduleSteps.splice(index, 1);
+            renderParentSchedule();
+            showToast(`🗑️ Removed: ${removed.cardLabel}`, false);
+        }
+    }
+
+    function moveUp(index) {
+        if (index > 0) {
+            [scheduleSteps[index-1], scheduleSteps[index]] = [scheduleSteps[index], scheduleSteps[index-1]];
+            renderParentSchedule();
+        }
+    }
+
+    function moveDown(index) {
+        if (index < scheduleSteps.length - 1) {
+            [scheduleSteps[index+1], scheduleSteps[index]] = [scheduleSteps[index], scheduleSteps[index+1]];
+            renderParentSchedule();
+        }
+    }
+
+    function clearSchedule() {
+        if (scheduleSteps.length === 0) {
+            showToast('Schedule is already empty', false);
+            return;
+        }
+        if (confirm('⚠️ Clear all steps? This will remove your current unsaved work.')) {
+            scheduleSteps = [];
+            renderParentSchedule();
+            showToast('Schedule cleared. Remember to save to update child view.', false);
+        }
+    }
+
+    function loadExampleSchedule() {
+        scheduleSteps = getDefaultExampleSteps();
+        renderParentSchedule();
+        showToast('✨ Loaded example: "5 steps to supermarket". Click Save to update child view.', false);
+    }
+
+    function handleSave() {
+        if (scheduleSteps.length === 0) {
+            showToast('⚠️ Schedule is empty. Add at least one step before saving.', true);
+            return;
+        }
+        persistScheduleToLocalStorage();
+        if (currentMode === 'child') {
+            renderChildViewFromStorage();
+        }
+    }
+
+    function renderParentSchedule() {
+        const len = scheduleSteps.length;
+        stepCounterSpan.innerText = `${len} / 10 steps`;
+
+        if (len === 0) {
+            scheduleListContainer.innerHTML = `<div style="color:#94a3b8; text-align:center; padding:20px;">📭 No steps. Click cards above to add.</div>`;
+            return;
+        }
+
+        let html = '';
+        scheduleSteps.forEach((step, idx) => {
+            html += `
+                <div class="step-row" data-step-id="${step.stepId}">
+                    <div class="step-number">${idx+1}</div>
+                    <div class="step-icon">${step.cardIcon}</div>
+                    <div class="step-text">${escapeHtml(step.cardLabel)}</div>
+                    <div class="step-actions">
+                        <button class="icon-btn move-up" data-index="${idx}" ${idx === 0 ? 'disabled style="opacity:0.4;"' : ''}>⬆️</button>
+                        <button class="icon-btn move-down" data-index="${idx}" ${idx === len-1 ? 'disabled style="opacity:0.4;"' : ''}>⬇️</button>
+                        <button class="icon-btn remove-btn" data-step-id="${step.stepId}">❌</button>
+                    </div>
+                </div>
+            `;
+        });
+        scheduleListContainer.innerHTML = html;
+
+        document.querySelectorAll('.move-up').forEach(btn => {
+            if (btn.disabled) return;
+            btn.addEventListener('click', (e) => {
+                const idx = parseInt(btn.getAttribute('data-index'));
+                if (!isNaN(idx)) moveUp(idx);
+            });
+        });
+        document.querySelectorAll('.move-down').forEach(btn => {
+            if (btn.disabled) return;
+            btn.addEventListener('click', (e) => {
+                const idx = parseInt(btn.getAttribute('data-index'));
+                if (!isNaN(idx)) moveDown(idx);
+            });
+        });
+        document.querySelectorAll('.remove-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const stepId = btn.getAttribute('data-step-id');
+                if (stepId) removeStep(stepId);
+            });
+        });
+    }
+
+    function escapeHtml(str) {
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
+            return c;
+        });
+    }
+
+    function renderChildViewFromStorage() {
+        const savedSchedule = loadScheduleFromLocalStorage();
+        if (!savedSchedule || savedSchedule.length === 0) {
+            childStepsContent.innerHTML = `
+                <div class="empty-message">
+                    🧸 No schedule yet.<br>
+                    Ask a parent to create steps and save ✨
+                </div>
+            `;
+            return;
+        }
+        let stepsHtml = '';
+        savedSchedule.forEach((step, idx) => {
+            stepsHtml += `
+                <div class="child-step-card">
+                    <div class="child-step-num">${idx+1}</div>
+                    <div class="child-step-icon">${step.cardIcon || '📌'}</div>
+                    <div class="child-step-label">${escapeHtml(step.cardLabel)}</div>
+                </div>
+            `;
+        });
+        childStepsContent.innerHTML = stepsHtml;
+    }
+
+    function setMode(mode) {
+        currentMode = mode;
+        if (mode === 'parent') {
+            parentViewDiv.style.display = 'block';
+            childViewDiv.style.display = 'none';
+            parentModeBtn.classList.add('active');
+            childModeBtn.classList.remove('active');
+            renderParentSchedule();
+        } else {
+            parentViewDiv.style.display = 'none';
+            childViewDiv.style.display = 'block';
+            childModeBtn.classList.add('active');
+            parentModeBtn.classList.remove('active');
+            renderChildViewFromStorage();
+        }
+    }
+
+    function bindGlobalEvents() {
+        clearScheduleBtn.addEventListener('click', clearSchedule);
+        loadExampleBtn.addEventListener('click', loadExampleSchedule);
+        saveScheduleBtn.addEventListener('click', handleSave);
+        parentModeBtn.addEventListener('click', () => setMode('parent'));
+        childModeBtn.addEventListener('click', () => setMode('child'));
+    }
+
+    function init() {
+        renderLibrary();
+        initializeSchedule();
+        bindGlobalEvents();
+        setMode('parent');
+    }
+
+    init();
+</script>
+</body>
+</html>
