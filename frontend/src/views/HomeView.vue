@@ -28,14 +28,14 @@ function enterParentMode() {
         class="px-10 py-6 text-2xl font-semibold rounded-2xl bg-orange-400 text-white shadow-lg hover:bg-orange-500 active:scale-95 transition-all"
         style="min-width: 160px; min-height: 100px;"
       >
-        儿童
+        Child
       </button>
       <button
         @click="enterParentMode"
         class="px-10 py-6 text-2xl font-semibold rounded-2xl bg-blue-500 text-white shadow-lg hover:bg-blue-600 active:scale-95 transition-all"
         style="min-width: 160px; min-height: 100px;"
       >
-        家长
+        Parent
       </button>
     </div>
   </div>
