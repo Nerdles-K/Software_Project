@@ -2,9 +2,9 @@
 
 | 项目        | VisiTalk — 自闭症儿童可视化沟通与情绪追踪平台 |
 | --------- | ----------------------------- |
-| 文档版本      | v1.1                          |
+| 文档版本      | v1.2                          |
 | 文档负责人     | Ke Hongyi (Scrum Master)      |
-| 最后更新      | 2026-05-18                    |
+| 最后更新      | 2026-06-01                    |
 | 关联文档      | PRD、项目架构文档、Workflow 文档        |
 | 项目跟踪工具    | Jira Scrum 项目 (Board: VisiTalk SCRUM) |
 
@@ -22,9 +22,10 @@
 
 | 里程碑                  | 计划日期           | 状态     |
 | -------------------- | -------------- | ------ |
-| PRD 评审通过             | 2026-05-18     | 🟡 进行中 |
-| 技术骨架跑通 (Hello VisiTalk) | 2026-05-26  | ⬜ 未开始 |
-| R1 — MVP 完成          | 2026-06-09     | ⬜ 未开始 |
+| PRD 评审通过             | 2026-05-18     | 🟢 完成 |
+| 技术骨架跑通 (Hello VisiTalk) | 2026-05-26  | 🟢 完成 |
+| 登录流程端到端              | 2026-06-01     | 🟢 完成 |
+| R1 — MVP 完成          | 2026-06-09     | 🟡 进行中 |
 | **Deliverable 3 提交** | **2026-06-07** | ⬜ 未开始 |
 | R2 — 增强 + 收尾 完成      | 2026-06-15     | ⬜ 未开始 |
 | **项目展示 (Presentation)** | **2026-06-15** | ⬜ 未开始 |
@@ -35,13 +36,13 @@
 
 | Release        | 时间窗口             | Sprint            | 进度     | 主要内容                     |
 | -------------- | ---------------- | ----------------- | ------ | ------------------------ |
-| R0 — 筹备        | 2026-05-13~05-26 | Sprint 0          | 🟡 进行中 | 团队组建、PRD 评审、技术骨架         |
-| R1 — MVP       | 2026-05-27~06-09 | Sprint 1 (2 周)    | ⬜ 未开始 | A-1, A-2, A-4, B-1, B-2  |
+| R0 — 筹备        | 2026-05-13~05-26 | Sprint 0          | 🟢 完成 | 团队组建、PRD 评审、技术骨架、登录流程    |
+| R1 — MVP       | 2026-05-27~06-09 | Sprint 1 (2 周)    | 🟡 进行中 | A-1, A-2, A-4, B-1, B-2  |
 | R2 — 增强 + 收尾   | 2026-06-10~06-15 | Sprint 2 (缩短 6 天) | ⬜ 未开始 | C-1, C-2, B-3（视容量）+ 收尾演示 |
 
 图例：🟢 完成 · 🟡 进行中 · ⬜ 未开始
 
-> Sprint 2 因 6/15 硬截止缩短为 6 天，仅承诺约半个 Sprint 容量。R3（C-3/C-4/C-5）与 A-5 列为本周期 **Won't**，详见 §5 与 PRD §9.1。
+> Sprint 0 已结束（5/26）。Sprint 1 自 5/27 启动，截至 6/1 已完成登录流程与前后端骨架联调，下一步投入 A-1/A-2 图卡功能开发。Sprint 2 因 6/15 硬截止缩短为 6 天。R3（C-3/C-4/C-5）与 A-5 列为本周期 **Won't**。
 
 ---
 
@@ -49,22 +50,30 @@
 
 | 项目          | 内容                                          |
 | ----------- | ------------------------------------------- |
-| Sprint      | Sprint 0 (R0)                               |
-| 周期          | 2026-05-13 ~ 2026-05-26                     |
-| Sprint Goal | 完成 PRD 评审，搭好前后端 + 数据库技术骨架，端到端跑通 "Hello VisiTalk" |
-| 承诺 SP       | — (Sprint 0 为筹备性 Sprint，不做功能 Story 估点)      |
+| Sprint      | Sprint 1 (R1 MVP)                           |
+| 周期          | 2026-05-27 ~ 2026-06-09                     |
+| Sprint Goal | 交付 MVP：儿童可看图卡分类、拖拽拼句；家长可管理图卡；可跑可视化日程    |
+| 承诺 SP       | 31 SP (A-1/A-2/A-4/B-1/B-2)                |
 
-### Sprint 0 任务清单
+### Sprint 1 当前进度 (截至 6/1)
 | 任务                              | 负责人          | 状态      |
 | ------------------------------- | ------------ | ------- |
-| PRD 完成并评审 (v1.1)               | Xu Ziyang    | 🟢 完成   |
-| Jira Scrum 项目与 Epic 建立         | Ke Hongyi    | 🟢 完成   |
-| User Story 录入 Jira Backlog     | Ke Hongyi    | 🟡 进行中  |
-| 前端脚手架 (Vue 3 + Vite + Tailwind) | Yuen KinNing | ⬜ 未开始  |
-| 后端脚手架 (Spring Boot 3)          | Xu Zihe      | ⬜ 未开始  |
-| Supabase 项目与基础表结构              | Xu Zihe      | ⬜ 未开始  |
-| CI/CD 流水线 (GitHub Actions)     | Xu Ziyang    | ⬜ 未开始  |
-| 技术栈 + Jira 看板链接发往 Teams 频道     | Xu Ziyang    | ⬜ 未开始  |
+| Sprint 0 签收 & tag vR0-sprint0   | Ke Hongyi    | 🟢 完成   |
+| 前端脚手架 (Vue 3 + Vite + Pinia + Tailwind) | Yuen KinNing | 🟢 完成 |
+| 后端脚手架 (Spring Boot 3 + JWT)   | Xu Zihe      | 🟢 完成 |
+| CI/CD 流水线 (GitHub Actions)     | Xu Ziyang    | 🟢 完成 |
+| 登录流程端到端 (JWT + 登录页 + 路由守卫)  | Xu Ziyang    | 🟢 完成 |
+| H2 内存数据库（本地开发用）              | Xu Ziyang    | 🟢 完成 |
+| A-1: 儿童端图卡分类主界面               | Yuen KinNing | 🔵 进行中 |
+| A-2: 拖拽图卡拼句                    | Yuen KinNing | ⬜ 待开始 |
+| A-4: 家长增删/排序图卡                 | Xu Ziyang    | ⬜ 待开始 |
+| B-1: 家长组合分步骤日程                | Yuen KinNing | ⬜ 待开始 |
+| B-2: 儿童端步骤高亮标识                | Yuen KinNing | ⬜ 待开始 |
+| Supabase 项目与基础表结构              | Xu Zihe      | ⬜ 待开始 |
+| Jira Story 录入 Backlog          | Ke Hongyi    | 🟡 进行中 |
+| Teams 频道发送技术栈 + Jira 链接       | Xu Ziyang    | 🟡 待确认 |
+
+> Sprint 0 全部任务已于 5/26 前完成。Sprint 1 自 5/27 启动，当前焦点为 A 模块图卡功能。登录流程已于 6/1 端到端跑通（前端 login form → 后端 JWT → 路由守卫）。H2 内存数据库替 Supabase 做本地开发，Supabase 生产库在 D3 前完成即可。
 
 ---
 
@@ -119,8 +128,7 @@
 | Sprint 1          | 2 周  | 31 (MVP) | —     | —           |
 | Sprint 2          | 6 天  | 12–15    | —     | —           |
 
-> 初始 Velocity 假设 25 SP / 标准 2 周 Sprint；Sprint 1 结束后即用实际数据校准 Sprint 2 承诺量。Burndown Chart 由 SM 在 Jira 中每日更新。
-> 注：Sprint 1 承诺 31 SP 略高于假设 Velocity，属偏激进，若 Sprint 1 中段燃尽偏差 > 20%，优先把 A-4 或 B-2 退回 Backlog。
+> Sprint 0 已签收。初始 Velocity 假设 25 SP / 标准 2 周 Sprint。Sprint 1 承诺 31 SP 略高于假设，属偏激进，中段（6/2）燃尽检查时若偏差 > 20% 优先把 A-4 或 B-2 退回 Backlog。Burndown Chart 由 SM 在 Jira 中每日更新。
 
 ---
 
@@ -142,12 +150,13 @@
 
 ## 8. 团队待办提醒 (Action Items)
 
-- [ ] 在 Jira 中补全全部 13 条 Story (A/B/C 模块) 并挂到对应 Epic；Won't 项 (A-5/C-3/C-4/C-5) 标注本周期不实现。
-- [ ] Sprint 1 设定日期 (2026-05-27 ~ 06-09)，把 5 条 Must 故事拖入 Sprint Backlog。
-- [ ] 把前端 / 后端技术栈 + Jira 看板链接发到 Teams 私有频道 (老师要求)。
-- [ ] Sprint 0 末 (05-26) 完成技术骨架并打 tag `vR0-sprint0`。
-- [ ] Deliverable 3 于 06-07 提交：届时 Sprint 1 已进行约 1.5 周，需保证 MVP 核心 (A-2 拖拽拼句 + B-1/B-2 日程) 可演示。
-- [ ] Sprint 2 (06-10~06-15) 为收尾冲刺：增强项 + 缺陷收敛 + 演示与文档定稿。
+- [x] Sprint 0 签收 & 打 tag `vR0-sprint0` ✅
+- [x] 前后端脚手架 + CI/CD 流水线 ✅
+- [x] 登录流程端到端 (JWT + login form + route guard) ✅
+- [ ] 在 Jira 中补全全部 13 条 Story (A/B/C 模块) 并挂到对应 Epic
+- [ ] 把前端 / 后端技术栈 + Jira 看板链接发到 Teams 私有频道 (老师要求)
+- [ ] **6/7 Deliverable 3 提交**：需保证 MVP 核心 (A-2 拖拽拼句 + B-1/B-2 日程) 可演示 — 剩余 **6 天**
+- [ ] Sprint 2 (6/10-6/15)：增强项 (C-1/C-2/B-3) + 缺陷收敛 + 演示文档定稿
 
 ---
 
@@ -157,3 +166,4 @@
 | ---- | ---------- | --------- | ------------------------------------------- |
 | v1.0 | 2026-05-18 | Ke Hongyi | 进度文档初稿                                      |
 | v1.1 | 2026-05-18 | Ke Hongyi | 配合 6/15 课程硬截止，压缩为 1 筹备 + 2 开发 Sprint；引入本周期 MoSCoW 取舍与 Won't 标注 |
+| v1.2 | 2026-06-01 | Ke Hongyi | Sprint 0 正式签收；Sprint 1 进展更新（登录流程完成、前后端骨架就绪、A-1 进行中）；新增 H2 本地开发数据库说明 |

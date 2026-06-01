@@ -2,10 +2,10 @@
 
 | 项目        | VisiTalk — 自闭症儿童可视化沟通与情绪追踪平台 |
 | --------- | ----------------------------- |
-| 文档版本      | v1.0                          |
-| 状态        | Draft — 待 Sprint 0 评审通过       |
+| 文档版本      | v1.1                          |
+| 状态        | Sprint 1 进行中                     |
 | 文档负责人     | Xu Ziyang (PO / 架构)           |
-| 最后更新      | 2026-05-18                    |
+| 最后更新      | 2026-06-01                    |
 | 关联文档      | `📦 VisiTalk — Product Requirements Document (PRD).md` |
 
 ---
@@ -20,9 +20,9 @@
 
 VisiTalk 采用**前后端分离 + BaaS 辅助**的三层架构：
 
-- **表现层 (Frontend)**：单页应用 (SPA)，内含儿童模式与家长模式，通过 PIN 切换。
-- **应用层 (Backend)**：Spring Boot 提供业务 REST API，承载图卡拼句、日程、行为分析与周报生成逻辑。
-- **数据层 (Data)**：Supabase (PostgreSQL) 负责持久化、鉴权与行级安全 (RLS)；Supabase Storage 存储图卡与导出 PDF。
+- **表现层 (Frontend)**：单页应用 (SPA)，内含儿童模式与家长模式，通过 JWT 登录鉴权自动切换角色。
+- **应用层 (Backend)**：Spring Boot 提供 REST API（JWT 鉴权），承载登录、图卡拼句、日程、行为分析与周报生成。
+- **数据层 (Data)**：开发阶段使用 H2 内存数据库；生产环境使用 Supabase (PostgreSQL) 持久化 + RLS 行级安全；Supabase Storage 存储图卡与导出 PDF。
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -61,7 +61,8 @@ VisiTalk 采用**前后端分离 + BaaS 辅助**的三层架构：
 | 拖拽交互   | vue-draggable-plus                          | A-2 图卡拖拽拼句的核心依赖；支持触摸事件，适配平板。                               |
 | 后端框架   | Spring Boot 3 (Java 17)                     | 团队后端成员熟悉 Java；模块化分包清晰；生态成熟。                                |
 | 接口风格   | REST + JWT                                  | 简单、易测试、易与前端联调；JWT 承载 role/family_id 用于鉴权。                  |
-| 数据库    | Supabase (PostgreSQL 15)                    | 关系型保证数据一致性；自带 Auth 与 RLS，省去自建鉴权成本。                         |
+| 数据库（开发） | H2 In-Memory                                | 本地开发零配置，每次启动自动建表并种测试数据，无需 Supabase 即可跑通全流程。 |
+| 数据库（生产） | Supabase (PostgreSQL 15)                    | 关系型保证数据一致性；自带 Auth 与 RLS，省去自建鉴权成本。                         |
 | 行级安全   | Supabase Row Level Security                 | 在数据库层强制儿童/家长数据隔离 (见 §6)，比应用层校验更可靠。                         |
 | 文件存储   | Supabase Storage                            | 与数据库同生态；存自定义图卡照片与导出的周报 PDF。                                |
 | CI/CD  | GitHub Actions                              | 与代码仓库同平台；自动跑 lint / 测试 / 部署。                               |
@@ -99,7 +100,7 @@ VisiTalk 采用**前后端分离 + BaaS 辅助**的三层架构：
 
 | 表                  | 关键字段                                                        | 归属模块 |
 | ------------------ | ----------------------------------------------------------- | ---- |
-| `User`             | id, role(child\|parent), family_id, pin_hash                | 全局   |
+| `User`             | id, email, password_hash, role(child\|parent), family_id, pin_hash | 全局   |
 | `PictogramCard`    | id, family_id, category, image_url, label_i18n, is_custom   | A    |
 | `Sentence`         | id, child_id, card_ids[], created_at                        | A    |
 | `ScheduleTemplate` | id, family_id, name, steps[card_id]                         | B    |
@@ -116,9 +117,39 @@ VisiTalk 采用**前后端分离 + BaaS 辅助**的三层架构：
 ## 6. 安全与隐私架构 (Security & Privacy)
 
 ### 6.1 鉴权流程
-1. 用户用账号登录 → Supabase Auth 颁发 JWT，内含 `role` 与 `family_id`。
-2. 前端切换儿童/家长模式时校验 PIN；破坏性操作 (清空 / 退出) 需 PIN 二次确认。
-3. 后端每个请求经 JWT 过滤器解析身份，再下传 Supabase。
+
+```
+前端 Login Form (email + password)
+        │  POST /api/auth/login
+        ▼
+后端 AuthController
+        │  AuthService.login(email, password)
+        ▼
+   查 User 表 → BCrypt 验密 → JwtUtil.generateToken(userId, role, familyId)
+        │  返回 { token, role, familyId }
+        ▼
+前端 auth store
+        │  存 token 到 localStorage
+        │  存 role + familyId 到 Pinia
+        │  路由守卫检查 localStorage token
+        ▼
+后续 API 请求
+        │  Authorization: Bearer <token>
+        ▼
+JwtFilter
+        │  解析 JWT → 提取 userId, role, family_id
+        │  注入 Spring SecurityContext
+        ▼
+   业务 Controller（SecurityContext 中取当前用户身份）
+```
+
+1. 用户输入 email + password → 前端调 `POST /api/auth/login`。
+2. 后端 `AuthService` 查 `User` 表，`BCryptPasswordEncoder` 验密，`JwtUtil` 签发 JWT（含 `sub=userId`, `role`, `family_id`，24h 过期）。
+3. 前端 `auth store` 将 token 存入 `localStorage`，Pinia 记录 `mode` / `familyId`。
+4. 前端 `api/client.ts` 的 fetch 封装在每次请求时从 `localStorage` 取 token，自动带 `Authorization: Bearer <token>`。
+5. 后端 `JwtFilter` 解析每个请求的 JWT，验证签名后提取身份信息注入 Spring Security Context。
+6. 路由守卫 `router.beforeEach` 拦截未登录访问（检查 `localStorage` 无 token 则重定向到 `/`）。
+7. 开发阶段使用 `DataInitializer`（`CommandLineRunner`）在启动时向 H2 自动种测试用户。
 
 ### 6.2 Row Level Security (RLS) 策略
 | 角色     | PECS / Schedule | BehaviorEvent | DiaryEntry                         |
@@ -162,6 +193,7 @@ GitHub Actions ── lint + unit + e2e ──┐
 | ADR-2 | 数据隔离放在数据库层 (RLS) 而非仅应用层             | 应用层校验易遗漏；RLS 是隐私需求 (儿童不被察觉) 的硬保证。        |
 | ADR-3 | 移除 TTS 语音播报功能 (原 A-3)               | 目标用户对声音敏感，语音播报与产品愿景冲突，列入 v4 候选。          |
 | ADR-4 | 前后端分别部署到 Vercel / Fly.io           | SPA 与 API 伸缩特性不同；分开部署各自取最优方案。            |
+| ADR-5 | 开发阶段使用 H2 内存数据库替 Supabase        | Supabase 尚未创建；H2 零配置、启动即用，`create-drop` + `DataInitializer` 每轮重启自动重建测试数据，前端后端可独立联调。生产切换仅需改 `application.yml` 数据源。 |
 
 ---
 
@@ -170,3 +202,4 @@ GitHub Actions ── lint + unit + e2e ──┐
 | 版本   | 日期         | 作者        | 变更         |
 | ---- | ---------- | --------- | ---------- |
 | v1.0 | 2026-05-18 | Xu Ziyang | 架构文档初稿     |
+| v1.1 | 2026-06-01 | Xu Ziyang | 更新鉴权流程（JWT 登录端到端实现）；新增 H2 开发数据库；User 表增加 email/password_hash 字段；新增 ADR-5 |
