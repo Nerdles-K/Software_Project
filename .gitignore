@@ -29,6 +29,9 @@ Thumbs.db
 *.war
 target/
 
+# Keep Gradle wrapper JAR tracked
+!/backend/gradle/wrapper/gradle-wrapper.jar
+
 # Logs
 *.log
 logs/
