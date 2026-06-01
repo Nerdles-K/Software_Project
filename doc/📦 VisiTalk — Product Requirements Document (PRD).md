@@ -2,7 +2,7 @@
 
 | 项目                    | VisiTalk — 自闭症儿童可视化沟通与情绪追踪平台                |
 | --------------------- | ------------------------------------------------------------ |
-| 文档版本              | v1.3                                                         |
+| 文档版本              | v1.4                                                         |
 | 状态                  | Sprint 1 进行中                                                |
 | 文档负责人 (PO)       | Xu Ziyang                                                    |
 | 团队                  | Xu Ziyang, Xu Zihe, Yuen KinNing, Ke Hongyi                  |
@@ -339,3 +339,4 @@ DiaryEntry (id, child_id, emotion_card_id, doodle_url, created_at)
 | v1.1   | 2026-05-18 | Xu Ziyang  | 移除 A-3 (TTS 播放按钮，与声音敏感原则冲突)；Module C 新增 C-6/C-7 儿童私人日记；更新数据模型与 Release Roadmap |
 | v1.2   | 2026-05-18 | Xu Ziyang  | 配合 6/15 课程硬截止，Release 压缩为 1 筹备 + 2 开发 Sprint；新增 §9.1 本周期 MoSCoW 取舍；更新估点校准说明 |
 | v1.3   | 2026-06-01 | Xu Ziyang  | 登录流程端到端已实现；Sprint 0 签收；Sprint 1 进行中；状态更新 |
+| v1.4   | 2026-06-01 | Xu Ziyang  | 数据库切换为 PostgreSQL 17 本地实例；新增注册功能；新增 start.sh 一键启动脚本 |

@@ -2,7 +2,7 @@
 
 | 项目        | VisiTalk — 自闭症儿童可视化沟通与情绪追踪平台 |
 | --------- | ----------------------------- |
-| 文档版本      | v1.2                          |
+| 文档版本      | v1.3                          |
 | 文档负责人     | Ke Hongyi (Scrum Master)      |
 | 最后更新      | 2026-06-01                    |
 | 关联文档      | PRD、项目架构文档、Workflow 文档        |
@@ -63,7 +63,9 @@
 | 后端脚手架 (Spring Boot 3 + JWT)   | Xu Zihe      | 🟢 完成 |
 | CI/CD 流水线 (GitHub Actions)     | Xu Ziyang    | 🟢 完成 |
 | 登录流程端到端 (JWT + 登录页 + 路由守卫)  | Xu Ziyang    | 🟢 完成 |
-| H2 内存数据库（本地开发用）              | Xu Ziyang    | 🟢 完成 |
+| PostgreSQL 17 本地数据库               | Xu Ziyang    | 🟢 完成 |
+| 注册功能端到端 (register API + UI)      | Xu Ziyang    | 🟢 完成 |
+| start.sh 一键启动脚本                   | Xu Ziyang    | 🟢 完成 |
 | A-1: 儿童端图卡分类主界面               | Yuen KinNing | 🔵 进行中 |
 | A-2: 拖拽图卡拼句                    | Yuen KinNing | ⬜ 待开始 |
 | A-4: 家长增删/排序图卡                 | Xu Ziyang    | ⬜ 待开始 |
@@ -167,3 +169,4 @@
 | v1.0 | 2026-05-18 | Ke Hongyi | 进度文档初稿                                      |
 | v1.1 | 2026-05-18 | Ke Hongyi | 配合 6/15 课程硬截止，压缩为 1 筹备 + 2 开发 Sprint；引入本周期 MoSCoW 取舍与 Won't 标注 |
 | v1.2 | 2026-06-01 | Ke Hongyi | Sprint 0 正式签收；Sprint 1 进展更新（登录流程完成、前后端骨架就绪、A-1 进行中）；新增 H2 本地开发数据库说明 |
+| v1.3 | 2026-06-01 | Ke Hongyi | H2 → PostgreSQL 17；注册功能完成；start.sh 一键启动脚本；更新 Sprint 1 任务状态 |

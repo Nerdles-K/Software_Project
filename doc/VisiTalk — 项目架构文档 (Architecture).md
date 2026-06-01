@@ -2,7 +2,7 @@
 
 | 项目        | VisiTalk — 自闭症儿童可视化沟通与情绪追踪平台 |
 | --------- | ----------------------------- |
-| 文档版本      | v1.1                          |
+| 文档版本      | v1.2                          |
 | 状态        | Sprint 1 进行中                     |
 | 文档负责人     | Xu Ziyang (PO / 架构)           |
 | 最后更新      | 2026-06-01                    |
@@ -20,9 +20,9 @@
 
 VisiTalk 采用**前后端分离 + BaaS 辅助**的三层架构：
 
-- **表现层 (Frontend)**：单页应用 (SPA)，内含儿童模式与家长模式，通过 JWT 登录鉴权自动切换角色。
-- **应用层 (Backend)**：Spring Boot 提供 REST API（JWT 鉴权），承载登录、图卡拼句、日程、行为分析与周报生成。
-- **数据层 (Data)**：开发阶段使用 H2 内存数据库；生产环境使用 Supabase (PostgreSQL) 持久化 + RLS 行级安全；Supabase Storage 存储图卡与导出 PDF。
+- **表现层 (Frontend)**：单页应用 (SPA)，内含儿童模式与家长模式，通过 JWT 登录/注册鉴权自动切换角色。
+- **应用层 (Backend)**：Spring Boot 提供 REST API（JWT 鉴权），承载登录、注册、图卡拼句、日程、行为分析与周报生成。
+- **数据层 (Data)**：PostgreSQL 17 本地实例持久化存储；`schema.sql` 手动管理表结构，JPA `validate` 模式校验。
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -44,8 +44,8 @@ VisiTalk 采用**前后端分离 + BaaS 辅助**的三层架构：
                              │ SQL (RLS 强制)
                              ▼
 ┌─────────────────────────────────────────────────────────────┐
-│              Supabase — PostgreSQL 15 + Auth + Storage        │
-│   数据表 (见 §5)  ·  Row Level Security 策略  ·  对象存储桶    │
+│              PostgreSQL 17 (本地) — 持久化存储                  │
+│   users · pictogram_card · sentence · schedule · behavior ...  │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -61,9 +61,9 @@ VisiTalk 采用**前后端分离 + BaaS 辅助**的三层架构：
 | 拖拽交互   | vue-draggable-plus                          | A-2 图卡拖拽拼句的核心依赖；支持触摸事件，适配平板。                               |
 | 后端框架   | Spring Boot 3 (Java 17)                     | 团队后端成员熟悉 Java；模块化分包清晰；生态成熟。                                |
 | 接口风格   | REST + JWT                                  | 简单、易测试、易与前端联调；JWT 承载 role/family_id 用于鉴权。                  |
-| 数据库（开发） | H2 In-Memory                                | 本地开发零配置，每次启动自动建表并种测试数据，无需 Supabase 即可跑通全流程。 |
-| 数据库（生产） | Supabase (PostgreSQL 15)                    | 关系型保证数据一致性；自带 Auth 与 RLS，省去自建鉴权成本。                         |
-| 行级安全   | Supabase Row Level Security                 | 在数据库层强制儿童/家长数据隔离 (见 §6)，比应用层校验更可靠。                         |
+| 数据库    | PostgreSQL 17 (本地)                        | 关系型保证数据一致性；本地零网络依赖；`schema.sql` 管理 DDL。 |
+| 认证方式   | Spring Security + JWT (自建)                 | BCrypt 密码哈希 + JJWT 签发/验证；JWT 含 userId, role, family_id。 |
+| RLS 替代  | Spring Security 角色 + family_id 应用层校验   | 课程项目周期内应用层校验替代数据库 RLS，逻辑等价。 |
 | 文件存储   | Supabase Storage                            | 与数据库同生态；存自定义图卡照片与导出的周报 PDF。                                |
 | CI/CD  | GitHub Actions                              | 与代码仓库同平台；自动跑 lint / 测试 / 部署。                               |
 | 前端部署   | Vercel                                      | 静态 SPA 部署快、自带 CDN 与预览环境。                                   |
@@ -143,13 +143,23 @@ JwtFilter
    业务 Controller（SecurityContext 中取当前用户身份）
 ```
 
-1. 用户输入 email + password → 前端调 `POST /api/auth/login`。
-2. 后端 `AuthService` 查 `User` 表，`BCryptPasswordEncoder` 验密，`JwtUtil` 签发 JWT（含 `sub=userId`, `role`, `family_id`，24h 过期）。
+### 现有 API 端点
+
+| 方法 | 路径 | 鉴权 | 说明 |
+|------|------|------|------|
+| GET | `/api/health` | 无 | 健康检查 |
+| POST | `/api/auth/register` | 无 | 注册（email, password, role） |
+| POST | `/api/auth/login` | 无 | 登录，返回 JWT token, role, familyId |
+
+### 鉴权流程
+
+1. **注册**：用户输入 email + password + role（parent/child）→ 前端调 `POST /api/auth/register` → 后端 BCrypt 加密密码 → 自动生成 `family_id` → 存入 PostgreSQL → 返回 JWT 直接登录。
+2. **登录**：用户输入 email + password → 前端调 `POST /api/auth/login` → 查 `users` 表 → BCrypt 验密 → `JwtUtil` 签发 JWT（含 `sub=userId`, `role`, `family_id`，24h 过期）。
 3. 前端 `auth store` 将 token 存入 `localStorage`，Pinia 记录 `mode` / `familyId`。
 4. 前端 `api/client.ts` 的 fetch 封装在每次请求时从 `localStorage` 取 token，自动带 `Authorization: Bearer <token>`。
 5. 后端 `JwtFilter` 解析每个请求的 JWT，验证签名后提取身份信息注入 Spring Security Context。
 6. 路由守卫 `router.beforeEach` 拦截未登录访问（检查 `localStorage` 无 token 则重定向到 `/`）。
-7. 开发阶段使用 `DataInitializer`（`CommandLineRunner`）在启动时向 H2 自动种测试用户。
+7. 启动时 `DataInitializer`（`CommandLineRunner`）自动种测试用户（parent@test.com / child@test.com）。
 
 ### 6.2 Row Level Security (RLS) 策略
 | 角色     | PECS / Schedule | BehaviorEvent | DiaryEntry                         |
@@ -180,7 +190,8 @@ GitHub Actions ── lint + unit + e2e ──┐
                               Supabase (staging / prod 各一实例)
 ```
 
-- **环境**：`dev` (本地) / `staging` (合并 main 自动部署，对内演示) / `prod` (Release 末手动晋级)。
+- **环境**：`dev` (本地 PostgreSQL + Spring Boot + Vite) / `staging` (合并 main 自动部署) / `prod` (Release 末手动晋级)。
+- 一键启动脚本：`bash start.sh`（自动检查 PostgreSQL、清理端口、启动前后端、打开浏览器）。
 - 每个 Sprint 末打 tag `vR{n}-sprint{m}`。
 
 ---
@@ -193,7 +204,8 @@ GitHub Actions ── lint + unit + e2e ──┐
 | ADR-2 | 数据隔离放在数据库层 (RLS) 而非仅应用层             | 应用层校验易遗漏；RLS 是隐私需求 (儿童不被察觉) 的硬保证。        |
 | ADR-3 | 移除 TTS 语音播报功能 (原 A-3)               | 目标用户对声音敏感，语音播报与产品愿景冲突，列入 v4 候选。          |
 | ADR-4 | 前后端分别部署到 Vercel / Fly.io           | SPA 与 API 伸缩特性不同；分开部署各自取最优方案。            |
-| ADR-5 | 开发阶段使用 H2 内存数据库替 Supabase        | Supabase 尚未创建；H2 零配置、启动即用，`create-drop` + `DataInitializer` 每轮重启自动重建测试数据，前端后端可独立联调。生产切换仅需改 `application.yml` 数据源。 |
+| ADR-5 | 使用本地 PostgreSQL 替代 H2 + Supabase    | H2 每次重启丢数据不利于持续开发；Supabase 需注册配置增加复杂度。PostgreSQL 17 本地实例零网络依赖、数据持久化、与未来 Supabase 同源，迁移零成本。 |
+| ADR-6 | 自建注册 + JWT 认证替代 Supabase Auth      | Supabase Auth 绑定云服务；自建 BCrypt + JJWT 认证可本地独立运行、无外部依赖，课程演示环境更可控。 |
 
 ---
 
@@ -203,3 +215,4 @@ GitHub Actions ── lint + unit + e2e ──┐
 | ---- | ---------- | --------- | ---------- |
 | v1.0 | 2026-05-18 | Xu Ziyang | 架构文档初稿     |
 | v1.1 | 2026-06-01 | Xu Ziyang | 更新鉴权流程（JWT 登录端到端实现）；新增 H2 开发数据库；User 表增加 email/password_hash 字段；新增 ADR-5 |
+| v1.2 | 2026-06-01 | Xu Ziyang | H2 → PostgreSQL 17 本地实例；新增注册端点 POST /api/auth/register；新增 ADR-6（自建认证）；新增 API 端点列表；新增 start.sh 一键启动 |
