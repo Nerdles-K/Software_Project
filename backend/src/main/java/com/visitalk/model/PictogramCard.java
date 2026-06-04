@@ -1,5 +1,6 @@
-package com.visitalk.pecs.model;
+package com.visitalk.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 
 @Entity
@@ -23,10 +24,11 @@ public class PictogramCard {
     private String labelI18n;
 
     @Column(name = "is_custom")
-    private Boolean isCustom = false;
+    @JsonProperty("isCustom")
+    private boolean isCustom;
 
     @Column(name = "sort_order")
-    private Integer sortOrder = 0;
+    private int sortOrder;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -38,8 +40,10 @@ public class PictogramCard {
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
     public String getLabelI18n() { return labelI18n; }
     public void setLabelI18n(String labelI18n) { this.labelI18n = labelI18n; }
-    public Boolean getIsCustom() { return isCustom; }
-    public void setIsCustom(Boolean isCustom) { this.isCustom = isCustom; }
-    public Integer getSortOrder() { return sortOrder; }
-    public void setSortOrder(Integer sortOrder) { this.sortOrder = sortOrder; }
+    @JsonProperty("isCustom")
+    public boolean isCustom() { return isCustom; }
+    @JsonProperty("isCustom")
+    public void setCustom(boolean custom) { isCustom = custom; }
+    public int getSortOrder() { return sortOrder; }
+    public void setSortOrder(int sortOrder) { this.sortOrder = sortOrder; }
 }

@@ -24,7 +24,10 @@ export async function api<T = unknown>(
     'Content-Type': 'application/json',
     ...((options.headers as Record<string, string>) || {}),
   }
-  if (token) {
+  // Don't send bearer token to login/register — a stale localStorage token would
+  // otherwise be rejected by the JWT filter before the auth controller runs.
+  const isPublic = path.startsWith('/api/auth/')
+  if (token && !isPublic) {
     headers['Authorization'] = `Bearer ${token}`
   }
 
@@ -39,4 +42,34 @@ export async function api<T = unknown>(
   }
 
   return res.json()
+}
+
+export async function uploadFile<T = { url: string }>(
+  path: string,
+  file: File
+): Promise<T> {
+  const token = getToken()
+  const form = new FormData()
+  form.append('file', file)
+  const headers: Record<string, string> = {}
+  if (token) headers['Authorization'] = `Bearer ${token}`
+
+  const res = await fetch(`${BASE_URL}${path}`, {
+    method: 'POST',
+    body: form,
+    headers,
+  })
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error((body as { error?: string }).error || `HTTP ${res.status}`)
+  }
+  return res.json()
+}
+
+export function assetUrl(path: string | undefined | null): string {
+  if (!path) return ''
+  if (/^https?:/i.test(path)) return path
+  if (path.startsWith('/uploads/')) return `${BASE_URL}${path}`
+  return path
 }

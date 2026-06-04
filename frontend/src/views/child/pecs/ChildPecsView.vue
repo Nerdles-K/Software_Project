@@ -14,7 +14,7 @@ import {
 
 const { t } = useI18n()
 
-const selectedCategory = ref<PecsCategory>('eat')
+const selectedCategory = ref<PecsCategory>('Eat')
 const cards = ref<PictogramCardDto[]>([])
 const sentenceCards = ref<SentenceCard[]>([])
 const starterCards = ref<PictogramCardDto[]>([])
@@ -25,13 +25,15 @@ const pulseInstanceId = ref<string | null>(null)
 const activeStarterId = computed(() => sentenceCards.value[0]?.card.id ?? null)
 
 const categories = computed(() => [
-  { id: 'eat' as const, label: t('child.pecs.category_eat'), bg: 'bg-orange-100', ring: 'ring-orange-300' },
-  { id: 'drink' as const, label: t('child.pecs.category_drink'), bg: 'bg-sky-100', ring: 'ring-sky-300' },
-  { id: 'play' as const, label: t('child.pecs.category_play'), bg: 'bg-emerald-100', ring: 'ring-emerald-300' },
-  { id: 'feel' as const, label: t('child.pecs.category_feel'), bg: 'bg-violet-100', ring: 'ring-violet-300' },
+  { id: 'Eat' as const, label: t('child.pecs.category_eat'), bg: 'bg-orange-100', ring: 'ring-orange-300' },
+  { id: 'Drink' as const, label: t('child.pecs.category_drink'), bg: 'bg-sky-100', ring: 'ring-sky-300' },
+  { id: 'Play' as const, label: t('child.pecs.category_play'), bg: 'bg-emerald-100', ring: 'ring-emerald-300' },
+  { id: 'Feel' as const, label: t('child.pecs.category_feel'), bg: 'bg-violet-100', ring: 'ring-violet-300' },
 ])
 
 const poolDragGroup = { name: 'pecs', pull: 'clone' as const, put: false }
+
+const STARTER_LABELS = new Set(['Want', 'Need', 'Like', 'Stop', 'Give'])
 
 async function loadCards() {
   loading.value = true
@@ -48,27 +50,22 @@ async function loadCards() {
 
 async function loadStarterCards() {
   try {
-    starterCards.value = await fetchCardsByCategory('core')
+    const action = await fetchCardsByCategory('Action')
+    starterCards.value = action.filter((c) => STARTER_LABELS.has(c.labelI18n ?? ''))
     if (sentenceCards.value.length === 0) {
       const defaultCard =
-        starterCards.value.find((c) => c.labelI18n === 'child.pecs.card_want') ??
-        starterCards.value[0]
-      if (defaultCard) {
-        setStarterInSentence(defaultCard)
-      }
+        starterCards.value.find((c) => c.labelI18n === 'Want') ?? starterCards.value[0]
+      if (defaultCard) setStarterInSentence(defaultCard)
     }
   } catch {
     starterCards.value = []
   }
 }
 
-/** Tap a starter pictogram to set/replace the first slot in the sentence bar. */
 function chooseStarter(card: PictogramCardDto) {
   setStarterInSentence(card)
   pulseInstanceId.value = `starter-${card.id}`
-  window.setTimeout(() => {
-    pulseInstanceId.value = null
-  }, 200)
+  window.setTimeout(() => { pulseInstanceId.value = null }, 200)
 }
 
 function setStarterInSentence(card: PictogramCardDto) {
@@ -88,22 +85,16 @@ function onSentenceCardAdded() {
   const last = sentenceCards.value[sentenceCards.value.length - 1]
   if (!last) return
   pulseInstanceId.value = last.instanceId
-  window.setTimeout(() => {
-    pulseInstanceId.value = null
-  }, 200)
+  window.setTimeout(() => { pulseInstanceId.value = null }, 200)
 }
 
 function selectCategory(cat: PecsCategory) {
   selectedCategory.value = cat
 }
 
-watch(selectedCategory, () => {
-  loadCards()
-}, { immediate: true })
+watch(selectedCategory, () => { loadCards() }, { immediate: true })
 
-onMounted(() => {
-  loadStarterCards()
-})
+onMounted(() => { loadStarterCards() })
 </script>
 
 <template>
@@ -112,14 +103,12 @@ onMounted(() => {
     <p v-if="loadError" class="sr-only" role="alert">{{ loadError }}</p>
 
     <section class="mx-auto max-w-3xl">
-      <!-- A-2: sentence bar (句条) — drag cards here, pictures only -->
       <ChildSentenceBar
         v-model="sentenceCards"
         :pulse-instance-id="pulseInstanceId"
         @card-added="onSentenceCardAdded"
       />
 
-      <!-- Starter phrases: tap to pick the first card in the sentence (not text on screen) -->
       <div
         v-if="starterCards.length > 0"
         class="mb-6 flex gap-3 overflow-x-auto pb-1"
@@ -132,7 +121,7 @@ onMounted(() => {
           type="button"
           class="flex min-h-[100px] min-w-[100px] shrink-0 items-center justify-center rounded-2xl bg-white shadow-sm ring-4 transition duration-200 active:scale-[0.98] focus:outline-none focus-visible:ring-amber-400"
           :class="activeStarterId === starter.id ? 'ring-amber-400' : 'ring-black/10'"
-          :aria-label="starter.labelI18n ? t(starter.labelI18n) : undefined"
+          :aria-label="starter.labelI18n ?? undefined"
           :aria-pressed="activeStarterId === starter.id"
           @click="chooseStarter(starter)"
         >
@@ -153,9 +142,9 @@ onMounted(() => {
         >
           <span class="pointer-events-none flex flex-col items-center gap-4">
             <span class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/70 ring-2 ring-black/10">
-              <span v-if="cat.id === 'eat'" class="text-4xl" aria-hidden="true">🍎</span>
-              <span v-else-if="cat.id === 'drink'" class="text-4xl" aria-hidden="true">🥤</span>
-              <span v-else-if="cat.id === 'play'" class="text-4xl" aria-hidden="true">🧸</span>
+              <span v-if="cat.id === 'Eat'" class="text-4xl" aria-hidden="true">🍎</span>
+              <span v-else-if="cat.id === 'Drink'" class="text-4xl" aria-hidden="true">🥤</span>
+              <span v-else-if="cat.id === 'Play'" class="text-4xl" aria-hidden="true">🧸</span>
               <span v-else class="text-4xl" aria-hidden="true">😊</span>
             </span>
             <span class="sr-only">{{ cat.label }}</span>
@@ -163,7 +152,6 @@ onMounted(() => {
         </button>
       </div>
 
-      <!-- A-2: drag from pool into sentence bar (clone — card stays in pool) -->
       <VueDraggable
         v-model="cards"
         :group="poolDragGroup"
@@ -181,6 +169,7 @@ onMounted(() => {
           class="flex min-h-[120px] min-w-[100px] cursor-grab items-center justify-center rounded-2xl bg-white shadow-sm ring-2 ring-black/10 transition active:scale-[0.98] active:cursor-grabbing focus:outline-none focus-visible:ring-4 focus-visible:ring-amber-400"
           tabindex="0"
           role="button"
+          :aria-label="card.labelI18n ?? undefined"
         >
           <PictogramCardFace :card="card" />
         </div>

@@ -2,11 +2,11 @@
 
 | 项目                    | VisiTalk — 自闭症儿童可视化沟通与情绪追踪平台                |
 | --------------------- | ------------------------------------------------------------ |
-| 文档版本              | v1.4                                                         |
-| 状态                  | Sprint 1 进行中                                                |
+| 文档版本              | v1.7                                                         |
+| 状态                  | Sprint 2 收尾（Epic A/B/C 功能侧全部完成，测试与演示物料进行中）  |
 | 文档负责人 (PO)       | Xu Ziyang                                                    |
 | 团队                  | Xu Ziyang, Xu Zihe, Yuen KinNing, Ke Hongyi                  |
-| 最后更新              | 2026-06-01                                                   |
+| 最后更新              | 2026-06-04                                                   |
 | 相关资料              | `2026-03-17-Orange-ElevatorPitch-ImpactMapping-Personas-InterviewReports-V1.0.pdf` |
 | 开发框架              | Scrum (2-week Sprint) + Story Mapping + Continuous Delivery  |
 
@@ -95,7 +95,7 @@
 | A-1   | 作为儿童，我希望在主界面看到大尺寸、字面化的图卡分类 (吃/喝/玩/感受)，以便快速找到想表达的内容。 | Must   | 5       | R1      |
 | A-2   | 作为儿童，我希望把图卡拖拽到顶部句条上，自动拼成"我想要 + 苹果"，以便表达完整意图。           | Must   | 8       | R1      |
 | A-4   | 作为家长，我希望在家长模式下增删/排序图卡，以便贴合我家孩子的真实词汇量。                       | Must   | 5       | R1      |
-| A-5   | 作为家长，我希望上传自家物品的照片作为自定义图卡，以提高识别率。                              | Could  | 8       | R2      |
+| A-5   | 作为家长，我希望上传自家物品的照片作为自定义图卡，以提高识别率。                              | Must (追加) | 8   | R1      |
 
 **示例验收标准 (A-2)**
 
@@ -208,10 +208,10 @@ DiaryEntry (id, child_id, emotion_card_id, doodle_url, created_at)
 
 | 级别              | Story                     | 说明                                          |
 | --------------- | ------------------------- | ------------------------------------------- |
-| **Must**        | A-1, A-2, A-4, B-1, B-2   | R1 MVP，演示与 Deliverable 3 的核心，Sprint 1 必交付    |
-| **Should**      | C-1, C-2, B-3             | Sprint 2 优先增强项：行为记录闭环 + 日程打勾                 |
-| **Could**       | C-6, C-7, B-4             | Sprint 2 拉伸项，有余力才做                           |
-| **Won't (本周期)** | A-5, C-3, C-4, C-5        | 工作量过大或依赖长期数据积累（如 C-3 周报需数周真实记录），列入产品未来路线，不在 6/15 前实现 |
+| **Must**        | A-1, A-2, A-4, **A-5(追加)**, B-1, B-2, **C-1..C-7(全部追加)** | R1 MVP + Sprint 2 全量。A-5 6/2 升 Must（6/3 完成）；C-3/C-4/C-5/C-6/C-7 于 6/4 升 Must 并同日完成 |
+| **Should**      | B-3                       | Sprint 2 余下增强项：日程打勾                            |
+| **Could**       | B-4                       | Sprint 2 拉伸项：日程模板保存                            |
+| **Won't (本周期)** | —                        | 暂无；C-3 周报已在 6/4 实现（含 insufficient 态保护），真实数据积累不再阻塞功能上线 |
 
 ---
 
@@ -340,3 +340,9 @@ DiaryEntry (id, child_id, emotion_card_id, doodle_url, created_at)
 | v1.2   | 2026-05-18 | Xu Ziyang  | 配合 6/15 课程硬截止，Release 压缩为 1 筹备 + 2 开发 Sprint；新增 §9.1 本周期 MoSCoW 取舍；更新估点校准说明 |
 | v1.3   | 2026-06-01 | Xu Ziyang  | 登录流程端到端已实现；Sprint 0 签收；Sprint 1 进行中；状态更新 |
 | v1.4   | 2026-06-01 | Xu Ziyang  | 数据库切换为 PostgreSQL 17 本地实例；新增注册功能；新增 start.sh 一键启动脚本 |
+| v1.5   | 2026-06-03 | Xu Ziyang  | A-5 从 Won't/R2 升级为追加 Must/R1，已于 6/3 完成；§7.2 与 §9.1 同步 |
+| v1.5.1 | 2026-06-04 | Xu Ziyang  | 日期刷新；A-5 范围内含 6/3 收尾的"上传即建卡"语义（详见 Progress / Architecture / Work Packages） |
+| v1.6   | 2026-06-04 | Xu Ziyang  | C-3/C-4/C-5/C-6/C-7 由 Won't / Could 升 Must 并同日完成；§9.1 MoSCoW 表更新；Won't 列空 |
+| v1.6.1 | 2026-06-04 | Xu Ziyang  | Epic B (B-1..B-4) 全部完成；至此 Epic A / B / C 均交付，R1+R2 范围 100% 达成 |
+| v1.6.2 | 2026-06-04 | Xu Ziyang  | 跨文档校对：与 Progress v1.7 / Workflow v1.4 / Architecture v1.5 / Work Packages v1.4 同步对齐；本周期 Won't 列表确认为空 |
+| v1.7   | 2026-06-04 | Xu Ziyang  | A-2 升级：词卡库 16→53、新增 People/Action/Time 分类；sentence 表演化为双向家庭对话（family_id + sender_role）；新增 child / parent 两端 Chat 视图与 ChatComposer 公共组件 |

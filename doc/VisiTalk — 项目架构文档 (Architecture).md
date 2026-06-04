@@ -2,10 +2,10 @@
 
 | 项目        | VisiTalk — 自闭症儿童可视化沟通与情绪追踪平台 |
 | --------- | ----------------------------- |
-| 文档版本      | v1.2                          |
-| 状态        | Sprint 1 进行中                     |
+| 文档版本      | v1.6                          |
+| 状态        | Epic A + B + C 已完成（R1/R2 范围全部交付） |
 | 文档负责人     | Xu Ziyang (PO / 架构)           |
-| 最后更新      | 2026-06-01                    |
+| 最后更新      | 2026-06-04                    |
 | 关联文档      | `📦 VisiTalk — Product Requirements Document (PRD).md` |
 
 ---
@@ -76,21 +76,48 @@ VisiTalk 采用**前后端分离 + BaaS 辅助**的三层架构：
 
 系统按 PRD 三大功能模块分包，前后端均保持同名分层，降低认知成本。
 
-### 4.1 Module A — Digital PECS Builder
-- **前端**：`views/child/pecs/` — 图卡分类网格、句条区、拖拽逻辑。
-- **后端**：`pecs` 包 — 图卡 CRUD、句子保存、自定义图卡上传校验。
-- **关键依赖**：vue-draggable-plus；Supabase Storage (A-5 自定义图卡)。
+### 4.1 Module A — Digital PECS Builder ✅ 已完成 (Sprint 1, 6/3)，**A-2 6/4 扩展为双向对话**
 
-### 4.2 Module B — Visual Schedule & Timeline
-- **前端**：`views/child/schedule/` (儿童执行) + `views/parent/schedule/` (家长编排)。
-- **后端**：`schedule` 包 — 模板 CRUD、日程实例、步骤完成状态。
-- **数据**：`ScheduleTemplate` / `ScheduleInstance`。
+> 6/3 收尾后补：A-5 改为"上传即建卡"语义，新增 `PATCH /api/cards/{id}` 与列表 inline 重命名（详见 §6 API 列表）。
+> 6/4 A-2 升级：词卡库扩到 **53 卡 × 7 分类**（新增 People/Action/Time 让句子能拼出主谓宾+时间），并把 sentence 表从单向"儿童拼好就存"改为双向家庭对话——sentence 表去 `child_id`，加 `family_id` + `sender_role`；新增 `/child/chat`（amber 浅色）和 `/parent/chat`（slate 深色）共用 `ChatComposer` + `MessageBubble`；两端 3s polling 拉新消息；ParentNav 加 Chat tab，child 主屏右下加 💬 大圆按钮入口。
+- **前端**：`views/child/pecs/ChildPecsView.vue`（分类网格 + 句条 + HTML5 drag/drop + 点击双通道）；`views/parent/pecs/ParentPecsView.vue`（CRUD + vue-draggable-plus 排序 + 文件上传 UI）。
+- **后端**：`pecs.CardController`（GET/POST/DELETE/PUT reorder）、`pecs.SentenceController`、`pecs.UploadController`（multipart 文件落盘 + 类型/大小校验）。
+- **数据**：`PictogramCard`（`@JsonProperty("isCustom")` 强制 JSON 字段名）、`Sentence`。
+- **关键依赖**：vue-draggable-plus（家长端排序）；本地文件系统 `backend/uploads/`（A-5 上传图卡，通过 `WebConfig` 暴露为 `/uploads/**` 静态资源；生产环境可平滑切换到 Supabase Storage）。
 
-### 4.3 Module C — Behavior Logger, Weekly Report & Child Diary
-- **前端**：`views/parent/behavior/` (记录与周报) + `views/child/diary/` (儿童私人日记)。
-- **后端**：`behavior` 包 (事件记录、连续触发检测) + `report` 包 (周报聚合、PDF 导出、分享链接)。
-- **数据**：`BehaviorEvent` / `WeeklyReport` / `DiaryEntry`。
-- **隐私要点**：`DiaryEntry` 明细对家长不可见 (见 §6)。
+### 4.2 Module B — Visual Schedule & Timeline ✅ 已完成 (Sprint 1+2 合并, 6/4)
+- **前端**：
+  - `views/parent/schedule/ParentScheduleView.vue` — list / build / edit / delete templates（≤10 steps 前端硬限 + 后端 400 兜底）；分类筛选 + 库点选 + 上下箭头排序 + 实时预览（icon + label）。
+  - `views/child/schedule/ChildScheduleView.vue` — 多模板 picker；逐步执行：current 强高亮（ring-4 + scale）+ next 半高亮（ring-2 + opacity-80）+ rest 暗化（opacity-40）+ done 翠绿；80×80 大复选框（B-3），✓ pop 动画；全完成 🎉 庆祝 + Start Over 重置。
+  - 入口：[ParentNav](frontend/src/components/ParentNav.vue) 加 Schedule tab，[ChildPecsView](frontend/src/views/child/pecs/ChildPecsView.vue) 左下角 🗓️ 大圆按钮（≥120px 触控区）。
+- **后端**：
+  - `schedule.ScheduleController` — `GET/POST/PUT/DELETE /api/schedules/templates`、`GET /api/schedules/today?templateId=`、`PUT /api/schedules/instances/{id}/step`。
+  - `repository.ScheduleTemplateRepository` / `ScheduleInstanceRepository` — JdbcTemplate（`BIGINT[]` 数组列），与 `BehaviorEventRepository` 模式一致。
+  - `today` 端点合并 template + instance + 按步骤顺序展开的 PictogramCard 三个对象，让儿童端单次请求就能渲染完整 schedule，不再额外拉 cards 表。
+- **数据**：`ScheduleTemplate (steps BIGINT[])` / `ScheduleInstance (completed_step_ids BIGINT[] 存索引)`。
+- **关键约束**：
+  - `steps` 长度 1..10 控制器层硬校验；超出返回 400。
+  - `instances.findByTemplateAndDate` 不存在则 controller `today` 端点自动建（不需要 child 端 POST）。
+  - 删除 template 会先 DELETE 对应 instances，避免 FK 残留。
+  - `completed_step_ids` 用 **索引**（0-based）而非 card id，让同一张卡在同一 schedule 重复出现也能去重不歧义。
+
+### 4.3 Module C — Behavior Logger, Weekly Report & Child Diary ✅ 已完成 (Sprint 2, 6/4)
+- **前端**：
+  - `views/parent/behavior/ParentBehaviorView.vue` — C-1 三步表单（intensity → trigger → submit），C-2 深色 slate-900 UI，C-2 PIN-1234 退出确认。
+  - `views/parent/behavior/ParentReportView.vue` — C-3 自绘 SVG 折线图 + Top-3，C-4 `window.print()` 走浏览器 PDF + Create Share Link。
+  - `views/parent/settings/ParentSettingsView.vue` — C-5 连续触发警告横幅 + dismiss，C-7 diary toggle + today-bool 指示。
+  - `views/child/diary/ChildDiaryView.vue` — C-6 5 张情绪图卡 + Pointer Events 画布涂鸦 + 颜色选择。
+  - `views/PublicShareView.vue` — C-4 anonymous 公开页面（路由 `/share/reports/:token`，无 requiresAuth）。
+- **后端**：
+  - `behavior.BehaviorController` — C-1 `POST /api/behavior-events`（只 parent）、`GET` 列表。
+  - `behavior.BehaviorAnalyticsService` — C-3 周聚合算法（Mon-Sun 自然周；≥3 记录 → success，否则 insufficient）、C-5 连续天数检测（30 天窗口 + dismissal 抑制）。
+  - `behavior.AlertController` — C-5 `GET /api/alerts`、`POST /api/alerts/dismiss`。
+  - `report.WeeklyReportController` — C-3 `GET /api/reports/weekly`、C-4 `POST /api/reports/share`（生成 token + payload 快照 + 24h 过期）。
+  - `report.PublicShareController` — C-4 `GET /share/reports/{token}`（无鉴权；404 / 410 / 200 三态）。
+  - `pecs.DiaryController` — C-6 `POST` / `GET`（child-only 写读）；C-7 `GET /check-today`（parent-only 布尔）。
+  - `pecs.FamilySettingsController` — C-7 `GET` / `PUT /diary-enabled`（PUT 仅 parent）。
+- **数据**：`BehaviorEvent`（JdbcTemplate，含 `text[] trigger_tags`）、`DiaryEntry`、`FamilySettings` (system_configs)、`ReportShare`、`AlertDismissal`。
+- **隐私要点**：`DiaryEntry` 明细对家长 403；parent 只能拿 `{enabled, writtenToday, count}`。child 完全无法访问 `/api/behavior-events*`、`/api/reports/*`、`/api/alerts*`。所有跨角色规则在 controller 入口处通过 `req.getAttribute("role")` 强制校验。
 
 ---
 
@@ -150,14 +177,47 @@ JwtFilter
 | GET | `/api/health` | 无 | 健康检查 |
 | POST | `/api/auth/register` | 无 | 注册（email, password, role） |
 | POST | `/api/auth/login` | 无 | 登录，返回 JWT token, role, familyId |
+| GET | `/api/cards?familyId=&category=` | JWT | 按家庭 / 分类查询图卡（A-1） |
+| POST | `/api/cards` | JWT | 新增图卡（A-4） |
+| DELETE | `/api/cards/{id}` | JWT | 删除图卡（A-4） |
+| PATCH | `/api/cards/{id}` | JWT | 重命名图卡 `labelI18n`（A-5 上传后默认 label 改名） |
+| PUT | `/api/cards/reorder` | JWT | 批量更新 `sort_order`（A-4） |
+| POST | `/api/sentences` | JWT | 发送 PECS 对话消息；sender_role+family_id 从 JWT 取，body 仅含 cardIds（A-2 对话版） |
+| GET | `/api/sentences` | JWT | 当前家庭对话 feed（time asc，limit ≤500） |
+| GET | `/api/sentences?sinceId=N` | JWT | 增量 poll：仅返回 id > N 的新消息 |
+| POST | `/api/uploads` | JWT | multipart 上传 JPG/PNG ≤5MB，返回 `{url:"/uploads/{uuid}.{ext}"}`（A-5） |
+| GET | `/uploads/**` | 无 | 静态服务上传的图卡照片（A-5；缓存 1h） |
+| POST | `/api/behavior-events` | JWT parent | 记录情绪/触发事件（C-1） |
+| GET | `/api/behavior-events` | JWT parent | 列出历史事件（C-1） |
+| GET | `/api/reports/weekly` | JWT parent | 自然周报：折线 chart + Top3，<3 条返回 `status=insufficient`（C-3） |
+| POST | `/api/reports/share` | JWT parent | 创建只读 token，payload 冻结，24h 过期（C-4） |
+| GET | `/share/reports/{token}` | 无 | 匿名读取报告；过期 410；未知 404（C-4） |
+| GET | `/api/alerts` | JWT parent | 当前连续 3 天同触发的标签列表（C-5） |
+| POST | `/api/alerts/dismiss` | JWT parent | 关闭某 tag 提示，直到新一轮连续 streak 开始（C-5） |
+| POST | `/api/diary-entries` | JWT child | 写日记；feature off 返回 409（C-6） |
+| GET | `/api/diary-entries` | JWT child | 仅儿童读自己（C-6；parent 直访 403） |
+| GET | `/api/diary-entries/check-today` | JWT parent | 仅返回 `{enabled, writtenToday, count}`，不暴露明细（C-7） |
+| GET | `/api/family-settings` | JWT 任意 | 家庭开关（child 需要知道是否显示日记图标） |
+| PUT | `/api/family-settings/diary-enabled` | JWT parent | 开/关儿童日记功能（C-7） |
+| GET | `/api/schedules/templates` | JWT | 当前家庭模板列表（B-4） |
+| POST | `/api/schedules/templates` | JWT parent | 创建模板（B-1）；steps ∈ [1,10] |
+| PUT | `/api/schedules/templates/{id}` | JWT parent | 改名 / 改步骤（B-4） |
+| DELETE | `/api/schedules/templates/{id}` | JWT parent | 删除模板 + 级联清 instance（B-4） |
+| GET | `/api/schedules/today?templateId=` | JWT | 返回 `{template, instance, cards in order}`；instance 不存在则自动建 |
+| PUT | `/api/schedules/instances/{id}/step` | JWT | body `{stepIndex, completed}`；B-3 |
+
+#### Multipart / 上传约束
+- `application.yml` 设 `spring.servlet.multipart.max-file-size: 10MB`、`max-request-size: 12MB`。
+- 业务层 `UploadController.MAX_BYTES = 5MB` 比 Spring 阈值小一档，目的是让超大文件在**应用层**返回友好 400 + JSON `{"error":"File exceeds 5MB limit"}`，避免 Spring 默认在过滤器链直接抛 `MaxUploadSizeExceededException` → 403。
+- 允许的 MIME：`image/jpeg`、`image/jpg`、`image/png`。文件名使用 `UUID` 防覆盖。
 
 ### 鉴权流程
 
 1. **注册**：用户输入 email + password + role（parent/child）→ 前端调 `POST /api/auth/register` → 后端 BCrypt 加密密码 → 自动生成 `family_id` → 存入 PostgreSQL → 返回 JWT 直接登录。
 2. **登录**：用户输入 email + password → 前端调 `POST /api/auth/login` → 查 `users` 表 → BCrypt 验密 → `JwtUtil` 签发 JWT（含 `sub=userId`, `role`, `family_id`，24h 过期）。
 3. 前端 `auth store` 将 token 存入 `localStorage`，Pinia 记录 `mode` / `familyId`。
-4. 前端 `api/client.ts` 的 fetch 封装在每次请求时从 `localStorage` 取 token，自动带 `Authorization: Bearer <token>`。
-5. 后端 `JwtFilter` 解析每个请求的 JWT，验证签名后提取身份信息注入 Spring Security Context。
+4. 前端 `api/client.ts` 的 fetch 封装在每次请求时从 `localStorage` 取 token，自动带 `Authorization: Bearer <token>`；**例外**：`/api/auth/**` 路径不带 token，避免 stale token 让登录本身失败。
+5. 后端 `JwtFilter` 解析每个请求的 JWT，验证签名后提取身份信息注入 Spring Security Context；当 token 无效但路径是公开路径（`/api/auth/**`、`/api/health`、`/uploads/**`）时**短路放行**，让请求进入对应 Controller。
 6. 路由守卫 `router.beforeEach` 拦截未登录访问（检查 `localStorage` 无 token 则重定向到 `/`）。
 7. 启动时 `DataInitializer`（`CommandLineRunner`）自动种测试用户（parent@test.com / child@test.com）。
 
@@ -206,6 +266,17 @@ GitHub Actions ── lint + unit + e2e ──┐
 | ADR-4 | 前后端分别部署到 Vercel / Fly.io           | SPA 与 API 伸缩特性不同；分开部署各自取最优方案。            |
 | ADR-5 | 使用本地 PostgreSQL 替代 H2 + Supabase    | H2 每次重启丢数据不利于持续开发；Supabase 需注册配置增加复杂度。PostgreSQL 17 本地实例零网络依赖、数据持久化、与未来 Supabase 同源，迁移零成本。 |
 | ADR-6 | 自建注册 + JWT 认证替代 Supabase Auth      | Supabase Auth 绑定云服务；自建 BCrypt + JJWT 认证可本地独立运行、无外部依赖，课程演示环境更可控。 |
+| ADR-7 | A-5 自定义图卡先用本地文件系统而非 Supabase Storage | Storage SDK 接入与凭据管理成本高于 6/15 演示窗口可承担的范围；本地 `uploads/` + `WebConfig` 静态映射零依赖；接口契约（返回相对 URL）与 Supabase Storage 同构，未来切换零业务改动。 |
+| ADR-8 | JwtFilter 对公开路径短路放行无效 token        | 修复实测 bug：stale token 残留 localStorage 让登录端点直接返回 401。Spring `permitAll()` 不影响过滤器链，过滤器自己必须区分公开/受保护路径。 |
+| ADR-9 | C-4 PDF 用浏览器 `window.print()` 替代服务端 PDF 库 | 课程周期内只需 1 张图 + 几行文字，引入 OpenHTMLToPDF / iText 等带样式损失风险，且会让后端膨胀。前端打印走 `@media print` 隐藏 chrome 后由浏览器生成原生 PDF（含图表、Top-3、周次），用户在打印对话框选"另存为 PDF"。零依赖、所见即所得、跨平台。 |
+| ADR-10 | C-4 分享报告冻结快照存 `payload_json` 文本字段 | 替代方案是匿名访问时实时重算聚合，但①家庭数据 24h 内可能变（新增事件影响 chart/Top3），分享链接应展示生成时刻；②匿名读到时不应再触发任何鉴权-相关查询。冻结 JSON 简单、稳定、对 DB 友好。 |
+| ADR-11 | C-5 dismissal 只抑制"当前正在进行的连续 streak" | 实现方式：以 streak 起点日期为锚点；若存在 dismissed_at ≥ streak 起点，则当次警报被压制。当一段连续期断开后再次组成新的 3 天连续期时，会自然产生 streak 起点更新，警报重新激活。这与 AC "关闭后不重复弹出直到新一轮触发" 一致。 |
+| ADR-12 | C-6/C-7 隐私不依赖前端 — controller 层强校验 | child JWT 调 `/api/diary-entries/check-today` 拒绝；parent JWT 调 `/api/diary-entries` 拒绝（403）。即便前端被绕过或用第三方客户端，明细字段也永不外泄。 |
+| ADR-13 | BehaviorEvent 用 JdbcTemplate 而非 JPA Entity | Postgres `text[]` 需要外部依赖（hypersistence-utils）或自定义 UserType 才能与 JPA 集成。JdbcTemplate 直接、无依赖；分析服务本就用 JdbcTemplate，统一一致。 |
+| ADR-14 | Schedule completed_step_ids 存索引而非 card_id | 同一张卡（如"喝水"）可能在一个 schedule 出现两次。存 index 让"第 1 步完成 vs 第 4 步完成"语义无歧义；UI 复杂度不变。 |
+| ADR-15 | /api/schedules/today 单次返回 template+instance+cards 全量 | 儿童端无 join 逻辑、不发额外请求；后端在 1 个 endpoint 内 join，符合儿童端"少网络、少 spinner"的可用性原则。 |
+| ADR-16 | Sentence 表 schema 重构：去 child_id、加 family_id + sender_role | 原表把 sentence 绑在单个 child，无法表达家长回复。改成 family-scoped + sender role 后，对话双方共享同一 feed，且 family_id 强制从 JWT 注入（PRD §6.2 跨族隔离）。 |
+| ADR-17 | PECS 对话用 3 s polling 而非 WebSocket | 课程项目周期不需要 push 即时性；HTTP polling 简单、零额外依赖、可调试。前端 `setInterval(refresh, 3000)` + 后端 `?sinceId=N` 增量端点保证 traffic 极小（只返回新增）。WebSocket 在 v4 路线再考虑。 |
 
 ---
 
@@ -216,3 +287,9 @@ GitHub Actions ── lint + unit + e2e ──┐
 | v1.0 | 2026-05-18 | Xu Ziyang | 架构文档初稿     |
 | v1.1 | 2026-06-01 | Xu Ziyang | 更新鉴权流程（JWT 登录端到端实现）；新增 H2 开发数据库；User 表增加 email/password_hash 字段；新增 ADR-5 |
 | v1.2 | 2026-06-01 | Xu Ziyang | H2 → PostgreSQL 17 本地实例；新增注册端点 POST /api/auth/register；新增 ADR-6（自建认证）；新增 API 端点列表；新增 start.sh 一键启动 |
+| v1.3 | 2026-06-03 | Xu Ziyang | Epic A 全部完成：新增 cards/sentences/uploads 端点列表与 multipart 约束；新增 ADR-7（A-5 本地文件系统）、ADR-8（JwtFilter 公开路径短路）；记录 client.ts 鉴权例外；Module A 状态改为 ✅ 已完成 |
+| v1.3.1 | 2026-06-04 | Xu Ziyang | 日期刷新；API 端点表补充 `PATCH /api/cards/{id}`（A-5 上传即建卡后重命名）；状态改为 "Epic A 已完成，B 模块开发中" |
+| v1.4 | 2026-06-04 | Xu Ziyang | **Epic C 全部完成**：§4.3 列出 5 个前端视图 + 6 个后端 controller 落地；API 表新增 13 条 C 模块端点；新增 ADR-9..13（打印 PDF / 快照 / dismissal 算法 / 隐私校验 / JdbcTemplate）；状态改为 "Epic A + Epic C 已完成，B 进行中" |
+| v1.5 | 2026-06-04 | Xu Ziyang | **Epic B 全部完成**：§4.2 列出 ParentScheduleView + ChildScheduleView 落地与 6 条 schedule 端点；ADR-14（索引而非 card_id）、ADR-15（today 一次性返回 template+instance+cards）；状态改为 "A/B/C 全部完成" |
+| v1.5.1 | 2026-06-04 | Xu Ziyang | 跨文档校对，无内容变更 |
+| v1.6 | 2026-06-04 | Xu Ziyang | **A-2 升级为双向对话**：§4.1 加 A-2 扩展说明；API 表 sentence 端点三连（POST/GET/sinceId 增量）；ADR-16（sentence schema 改 family + sender_role）、ADR-17（3 s polling 替代 WebSocket） |

@@ -29,6 +29,9 @@ Thumbs.db
 *.war
 target/
 
+# Keep Gradle wrapper JAR tracked
+!/backend/gradle/wrapper/gradle-wrapper.jar
+
 # Logs
 *.log
 logs/
@@ -39,3 +42,6 @@ coverage/
 
 # Supabase
 supabase/.temp/
+
+# Uploaded user photos (A-5)
+backend/uploads/

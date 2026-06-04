@@ -1,13 +1,8 @@
 import { api } from './client'
+import { useAuthStore } from '../stores/auth'
 
-export type PecsCategory = 'eat' | 'drink' | 'play' | 'feel'
-export type PecsCardCategory = PecsCategory | 'core'
-
-export interface SentenceCard {
-  /** Unique per drag instance (same pictogram can appear once in sentence) */
-  instanceId: string
-  card: PictogramCardDto
-}
+export type PecsCategory = 'Eat' | 'Drink' | 'Play' | 'Feel'
+export type StarterCategory = 'Action'
 
 export interface PictogramCardDto {
   id: number
@@ -18,8 +13,15 @@ export interface PictogramCardDto {
   sortOrder: number
 }
 
-export function fetchCardsByCategory(category: PecsCardCategory): Promise<PictogramCardDto[]> {
-  return api<PictogramCardDto[]>(`/api/cards?category=${encodeURIComponent(category)}`)
+export interface SentenceCard {
+  instanceId: string
+  card: PictogramCardDto
+}
+
+export function fetchCardsByCategory(category: string): Promise<PictogramCardDto[]> {
+  const auth = useAuthStore()
+  const params = new URLSearchParams({ familyId: auth.familyId, category })
+  return api<PictogramCardDto[]>(`/api/cards?${params}`)
 }
 
 export function cloneToSentence(card: PictogramCardDto): SentenceCard {
@@ -29,7 +31,13 @@ export function cloneToSentence(card: PictogramCardDto): SentenceCard {
   }
 }
 
-/** True when imageUrl is a remote asset; otherwise treat as emoji/symbol text. */
+/** Display emoji from team seed format (emoji:🍎) or plain emoji. */
+export function cardDisplaySymbol(imageUrl: string | null | undefined): string {
+  if (!imageUrl) return '📌'
+  if (imageUrl.startsWith('emoji:')) return imageUrl.slice('emoji:'.length)
+  return imageUrl
+}
+
 export function isRemoteImage(url: string | null | undefined): boolean {
   return !!url && (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/'))
 }

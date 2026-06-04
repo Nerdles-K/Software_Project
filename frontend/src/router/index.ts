@@ -44,6 +44,36 @@ const router = createRouter({
       component: () => import('../views/parent/behavior/ParentBehaviorView.vue'),
       meta: { requiresAuth: true },
     },
+    {
+      path: '/child/chat',
+      name: 'child-chat',
+      component: () => import('../views/child/chat/ChildChatView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/parent/chat',
+      name: 'parent-chat',
+      component: () => import('../views/parent/chat/ParentChatView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/parent/report',
+      name: 'parent-report',
+      component: () => import('../views/parent/behavior/ParentReportView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/parent/settings',
+      name: 'parent-settings',
+      component: () => import('../views/parent/settings/ParentSettingsView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      // C-4: anonymous public share page (no requiresAuth).
+      path: '/share/reports/:token',
+      name: 'public-share',
+      component: () => import('../views/PublicShareView.vue'),
+    },
   ],
 })
 
