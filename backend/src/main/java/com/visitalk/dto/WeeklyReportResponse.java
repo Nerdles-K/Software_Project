@@ -1,19 +1,17 @@
-package com.visitalk.backend.dto;
+package com.visitalk.dto;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
-// 周报结构化输出数据传输对象 (C-3 / C-4)
 public class WeeklyReportResponse {
     private String status;
     private String message;
     private LocalDate weekStartDate;
     private LocalDate weekEndDate;
-    private List<Map<String, Object>> chartData; // 用于前端渲染情绪趋势折线图
-    private List<String> top3Triggers;          -- 高频触发源聚合
+    private List<Map<String, Object>> chartData;
+    private List<String> top3Triggers;
 
-    // Getters and Setters
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
     public String getMessage() { return message; }

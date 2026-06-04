@@ -27,10 +27,18 @@ public class JwtFilter extends OncePerRequestFilter {
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
+    private static boolean isPublicPath(String path) {
+        return path.startsWith("/api/auth/")
+            || path.equals("/api/health")
+            || path.startsWith("/uploads/")
+            || path.startsWith("/share/");
+    }
+
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain chain) throws ServletException, IOException {
+        String path = request.getRequestURI();
         String header = request.getHeader("Authorization");
         if (header != null && header.startsWith("Bearer ")) {
             try {
@@ -49,9 +57,17 @@ public class JwtFilter extends OncePerRequestFilter {
                     List.of(() -> "ROLE_" + role.toUpperCase())
                 );
                 SecurityContextHolder.getContext().setAuthentication(auth);
+
+                // Expose trusted claims so downstream controllers don't have to re-parse.
+                request.setAttribute("userId", Long.parseLong(userId));
+                request.setAttribute("role", role);
+                request.setAttribute("familyId", familyId);
             } catch (Exception e) {
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                return;
+                // Stale/invalid token must not block public endpoints (login, register, health).
+                if (!isPublicPath(path)) {
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    return;
+                }
             }
         }
         chain.doFilter(request, response);

@@ -2,9 +2,9 @@
 
 | 项目        | VisiTalk — 自闭症儿童可视化沟通与情绪追踪平台 |
 | --------- | ----------------------------- |
-| 文档版本      | v1.2                          |
+| 文档版本      | v1.4                          |
 | 文档负责人     | Ke Hongyi (SM/QA) · Xu Ziyang (架构) |
-| 最后更新      | 2026-06-01                    |
+| 最后更新      | 2026-06-04                    |
 | 关联文档      | PRD、项目架构文档、项目进度文档            |
 
 ---
@@ -55,6 +55,8 @@ bash start.sh
 - 启动时 `DataInitializer` 检查 `users` 表为空才种测试用户（不重复插入）。
 - 测试账号：`parent@test.com` / `child@test.com`，密码均为 `password123`。也可通过 UI 注册新账号。
 - 前端登录后 JWT token 存 `localStorage`（key: `visitalk_token`），DevTools → Application → Local Storage 可查看。
+- **本地图卡上传目录**：`backend/uploads/`（首次上传自动创建，已加入 `.gitignore`）。Spring `WebConfig` 把该目录映射到 `/uploads/**` 路由；切换电脑或清理环境时直接整目录 `rm -rf` 即可。
+- **stale token 自救**：若浏览器之前有过登录残留导致行为异常，DevTools 控制台执行 `localStorage.clear(); location.reload()` 即可重置。后端 `JwtFilter` 已对 `/api/auth/**`、`/api/health`、`/uploads/**` 短路放行 stale token，登录本身不会被旧 token 阻塞。
 
 ---
 
@@ -98,6 +100,7 @@ bash start.sh
 - 安全：是否绕过 RLS、是否泄露 `BehaviorEvent` / `DiaryEntry` 明细。
 - 是否带了对应层级的测试 (见第二部分)。
 - 命名、分包是否符合架构文档约定。
+- **运行验证**：仅 `npm run build` / `./gradlew build` 通过 ≠ 功能可用。涉及交互/状态/网络的改动，PR 描述里必须给出"实际启动两端、操作走完主路径"的证据（截图或控制台日志）。Epic A 实测发现 v-model 绑 `computed`、`@drop.prevent` 无 handler、Jackson `is*` 序列化丢前缀、JwtFilter 误拒登录等 bug，单跑编译都查不出来。
 
 ## 7. CI/CD 流水线 (GitHub Actions)
 
@@ -135,16 +138,19 @@ lint  ──►  unit test  ──►  build  ──►  e2e test  ──►  de
 - 后端 Service 层、前端 store 与纯函数为重点。
 
 ### 9.2 权限 / 安全测试 (强制)
-- 必须验证：`child` 角色 JWT 访问 `BehaviorEvent` API 被拒绝。
-- 必须验证：`parent` 角色 JWT 读取 `DiaryEntry` 明细字段被拒绝、只能读聚合。
-- 必须验证：跨 `family_id` 访问任意资源被拒绝。
-- 权限通过 Spring Security 角色 + JWT 中的 `family_id` 在应用层校验。
-- 必须验证：跨 `family_id` 访问任何表被拒绝。
-- 这是风险 R4 (RLS 配置错误) 的核心防线，缺失则 PR 不可合并。
+- 必须验证：`child` 角色 JWT 访问 `/api/behavior-events*` / `/api/reports/*` / `/api/alerts*` 全部 403（PRD §6.2 RLS）。
+- 必须验证：`parent` 角色 JWT 调 `/api/diary-entries`（list / get）→ 403，只能调 `/check-today` 拿布尔。
+- 必须验证：`child` 角色 JWT 调 `PUT /api/family-settings/diary-enabled` → 403。
+- 必须验证：`child` 角色 JWT 调 `POST /api/schedules/templates` → 403（child 不能改日程）。
+- 必须验证：跨 `family_id` 访问任意资源被拒绝（JwtFilter 把 family 从 token 注入 request attribute，controller 不接受 query 中的 familyId 覆盖）。
+- 上述项每条已在 Epic A/B/C 开发期通过 curl 实测验证，但 Playwright + JUnit 自动化用例仍是 DoD 卡点。
 
 ### 9.3 E2E 测试
 - 每个核心 Story 至少 1 条 Playwright 用例覆盖主路径。
-- R1 必备 E2E：A-2 拖拽拼句、B-1+B-2 日程编排与高亮。
+- R1+R2 必备 E2E（功能侧已全部上线，待测试覆盖）：
+  - A-2 拖拽拼句、A-5 上传即建卡
+  - B-1 builder 保存 ≤10 steps、B-3 打勾推进到庆祝
+  - C-1 行为记录 3 步、C-3 周报 ≥3 阈值、C-4 分享链接 24h 过期回 410、C-6 child 写日记 / parent 只看 bool
 
 ### 9.4 易用性测试 (儿童端专项)
 - 每 Sprint 至少 1 次，邀请儿童用户或康复师代理评估。
@@ -194,3 +200,6 @@ lint  ──►  unit test  ──►  build  ──►  e2e test  ──►  de
 | v1.0 | 2026-05-18 | Ke Hongyi, Xu Ziyang | Workflow 文档初稿 |
 | v1.1 | 2026-06-01 | Ke Hongyi, Xu Ziyang | 更新开发环境说明（H2 本地数据库）；登录流程已实现 |
 | v1.2 | 2026-06-01 | Ke Hongyi, Xu Ziyang | H2 → PostgreSQL 17；新增 start.sh 一键启动；注册功能已实现 |
+| v1.3 | 2026-06-03 | Ke Hongyi, Xu Ziyang | 补充本地 `backend/uploads/` 上传目录与 stale token 自救步骤；Code Review 新增"运行验证"项（编译通过 ≠ 功能可用） |
+| v1.3.1 | 2026-06-04 | Ke Hongyi, Xu Ziyang | 日期刷新；无流程变更 |
+| v1.4   | 2026-06-04 | Ke Hongyi, Xu Ziyang | §9.2 权限测试列表扩到具体端点（behavior / report / alerts / diary / family-settings / schedules）；§9.3 R1+R2 必备 E2E 列表扩到 7 项覆盖 A/B/C 全部关键 AC |

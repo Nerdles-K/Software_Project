@@ -20,10 +20,12 @@ CREATE TABLE IF NOT EXISTS pictogram_card (
 
 CREATE TABLE IF NOT EXISTS sentence (
     id BIGSERIAL PRIMARY KEY,
-    child_id BIGINT NOT NULL REFERENCES users(id),
+    family_id VARCHAR(50) NOT NULL,
+    sender_role VARCHAR(10) NOT NULL CHECK (sender_role IN ('child', 'parent')),
     card_ids BIGINT[] NOT NULL DEFAULT '{}',
     created_at TIMESTAMP DEFAULT NOW()
 );
+CREATE INDEX IF NOT EXISTS idx_sentence_family_time ON sentence(family_id, created_at);
 
 CREATE TABLE IF NOT EXISTS schedule_template (
     id BIGSERIAL PRIMARY KEY,
@@ -65,3 +67,25 @@ CREATE TABLE IF NOT EXISTS diary_entry (
     doodle_url VARCHAR(500),
     created_at TIMESTAMP DEFAULT NOW()
 );
+
+CREATE TABLE IF NOT EXISTS system_configs (
+    family_id VARCHAR(50) PRIMARY KEY,
+    diary_feature_enabled BOOLEAN DEFAULT FALSE
+);
+
+CREATE TABLE IF NOT EXISTS report_share (
+    token VARCHAR(64) PRIMARY KEY,
+    family_id VARCHAR(50) NOT NULL,
+    week_start DATE NOT NULL,
+    payload_json TEXT NOT NULL,
+    expires_at TIMESTAMP NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS alert_dismissal (
+    id BIGSERIAL PRIMARY KEY,
+    family_id VARCHAR(50) NOT NULL,
+    trigger_tag TEXT NOT NULL,
+    dismissed_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_alert_dismissal_family_tag
+    ON alert_dismissal(family_id, trigger_tag);
