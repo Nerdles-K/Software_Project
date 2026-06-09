@@ -32,3 +32,9 @@ dependencies {
 tasks.named('test') {
     useJUnitPlatform()
 }
+
+// Only produce the executable bootJar (skip the plain library jar) so the
+// Docker image's `COPY build/libs/*.jar` matches exactly one file.
+tasks.named('jar') {
+    enabled = false
+}

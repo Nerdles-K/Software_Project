@@ -1,17 +1,18 @@
 server:
-  port: 8080
+  # Railway/Fly inject PORT; fall back to 8080 for local dev.
+  port: ${PORT:8080}
 
 spring:
   application:
     name: visitalk
   datasource:
-    url: jdbc:postgresql://localhost:5432/visitalk
-    username: visitalk
-    password: visitalk123
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/visitalk}
+    username: ${DATABASE_USERNAME:visitalk}
+    password: ${DATABASE_PASSWORD:visitalk123}
   jpa:
     hibernate:
       ddl-auto: validate
-    show-sql: true
+    show-sql: ${JPA_SHOW_SQL:true}
   servlet:
     multipart:
       max-file-size: 10MB
@@ -19,9 +20,12 @@ spring:
 
 app:
   jwt:
-    secret: visitalk-dev-secret-key-change-in-production-at-least-256-bits
-    expiration-ms: 86400000
+    secret: ${JWT_SECRET:visitalk-dev-secret-key-change-in-production-at-least-256-bits}
+    expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+  cors:
+    # Comma-separated list of allowed frontend origins.
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,https://visitalk.vercel.app}
 
 logging:
   level:
-    com.visitalk: DEBUG
+    com.visitalk: ${LOG_LEVEL:DEBUG}

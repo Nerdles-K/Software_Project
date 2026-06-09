@@ -1,0 +1,7 @@
+build/
+.gradle/
+bin/
+uploads/
+*.log
+.DS_Store
+package-lock.json

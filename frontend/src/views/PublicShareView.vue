@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 
-const BASE = 'http://localhost:8080'
+const BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
 
 interface WeeklyReport {
   status: string
