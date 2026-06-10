@@ -72,13 +72,13 @@ async function dismiss(tag: string) {
             your child wrote one today — never the content.
           </p>
         </div>
-        <button @click="toggleDiary" :disabled="saving"
-          :aria-pressed="diary.settings?.diaryFeatureEnabled"
+        <button @click="toggleDiary" :disabled="saving" type="button" role="switch"
+          :aria-checked="diary.settings?.diaryFeatureEnabled"
           :class="diary.settings?.diaryFeatureEnabled ? 'bg-emerald-500' : 'bg-slate-600'"
-          class="relative w-14 h-7 rounded-full transition-colors disabled:opacity-50 flex-shrink-0">
+          class="relative inline-flex items-center w-14 h-7 rounded-full transition-colors disabled:opacity-50 flex-shrink-0">
           <span
-            :class="diary.settings?.diaryFeatureEnabled ? 'translate-x-7' : 'translate-x-0.5'"
-            class="absolute top-0.5 w-6 h-6 bg-white rounded-full transition-transform"></span>
+            :class="diary.settings?.diaryFeatureEnabled ? 'translate-x-7' : 'translate-x-1'"
+            class="inline-block w-6 h-6 bg-white rounded-full shadow transform transition-transform"></span>
         </button>
       </div>
       <p v-if="error" class="text-sm text-red-400 mt-2">{{ error }}</p>
