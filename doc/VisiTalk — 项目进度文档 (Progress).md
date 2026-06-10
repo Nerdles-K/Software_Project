@@ -2,9 +2,9 @@
 
 | 项目        | VisiTalk — 自闭症儿童可视化沟通与情绪追踪平台 |
 | --------- | ----------------------------- |
-| 文档版本      | v1.7                          |
+| 文档版本      | v1.9                          |
 | 文档负责人     | Ke Hongyi (Scrum Master)      |
-| 最后更新      | 2026-06-04                    |
+| 最后更新      | 2026-06-10                    |
 | 关联文档      | PRD、项目架构文档、Workflow 文档        |
 | 项目跟踪工具    | Jira Scrum 项目 (Board: VisiTalk SCRUM) |
 
@@ -29,9 +29,10 @@
 | **Epic C (Behavior + Diary + Report) 全部完成** | **2026-06-04** | 🟢 完成 |
 | **Epic B (Visual Schedule) 全部完成** | **2026-06-04** | 🟢 完成 |
 | R1 — MVP 完成          | 2026-06-09     | 🟢 完成（提前 5 天） |
-| **Deliverable 3 提交** | **2026-06-07** | 🟡 演示物料定稿中 |
-| R2 — 增强 + 收尾 完成      | 2026-06-15     | 🟢 功能侧已完成；待测试/演示收尾 |
-| **项目展示 (Presentation)** | **2026-06-15** | ⬜ 未开始 |
+| **Deliverable 3 提交** | **2026-06-07** | 🟢 完成（D3 V3.0 已出，6/10） |
+| **生产部署上线 (Vercel + Render + Neon)** | **2026-06-10** | 🟢 完成（线上可用 + 浏览器端到端冒烟通过） |
+| R2 — 增强 + 收尾 完成      | 2026-06-15     | 🟢 功能侧 + 部署完成；待自动化测试覆盖 |
+| **项目展示 (Presentation)** | **2026-06-15** | 🟡 演示稿 V1.0 已起草 |
 
 ---
 
@@ -41,9 +42,13 @@
 | -------------- | ---------------- | ----------------- | ------ | ------------------------ |
 | R0 — 筹备        | 2026-05-13~05-26 | Sprint 0          | 🟢 完成 | 团队组建、PRD 评审、技术骨架、登录流程    |
 | R1 — MVP       | 2026-05-27~06-09 | Sprint 1 (2 周)    | 🟢 完成 | A-1/A-2/A-4/A-5(追加)、B-1/B-2 |
-| R2 — 增强 + 收尾   | 2026-06-10~06-15 | Sprint 2 (缩短 6 天) | 🟢 功能侧完成 | B-3/B-4 + C-1..C-7（C-3/4/5 同样追加为 Must） |
+| R2 — 增强 + 收尾   | 2026-06-10~06-15 | Sprint 2 (缩短 6 天) | 🟢 功能侧 + 部署完成 | B-3/B-4 + C-1..C-7（C-3/4/5 同样追加为 Must）；生产部署上线 |
 
 图例：🟢 完成 · 🟡 进行中 · ⬜ 未开始
+
+> **6/10 生产部署上线**：前端 **Vercel**（https://frontend-nine-lyart-85.vercel.app）+ 后端 **Render**（Docker，https://software-project-m0jm.onrender.com）+ 数据库 **Neon**（PostgreSQL 17）。后端配置全部外置为环境变量（`DATABASE_URL`/`JWT_SECRET`/`CORS_*` 等），CORS 用 `allowedOriginPatterns` 放行 `*.vercel.app`。Playwright 驱动真实 Chrome 对线上做了注册→登录→重复注册/错误密码端到端冒烟，全部通过。已产出《Deployment Manual V1.0》。
+>
+> ⚠️ 与原计划偏差：数据库由 **Supabase 换为 Neon**（Supabase 免费组织额度已满）；后端由 **Fly.io 换为 Render**（避免绑定信用卡）。架构文档 / Workflow 文档中 Supabase / Fly.io 字样待同步。
 
 > 6/4 单日大幅赶工：Epic A（A-5 追加 / 上传即建卡）、Epic B（B-1..B-4 含模板 + 庆祝）、Epic C（C-1..C-7 含原 Won't 的 C-3/C-4/C-5）全部端到端验证完成。R1+R2 范围功能侧 100% 达成；接下来重心切到测试覆盖（Vitest + Playwright）、演示脚本、Deliverable 3 物料定稿。距 6/7 D3 提交剩 **3 天**，6/15 演示剩 **11 天**。原 Won't（R3 段）全部上线，本周期 Won't 列表清空。
 
@@ -66,13 +71,13 @@
 | Epic B — B-1 / B-2 / B-3 / B-4           | Xu Ziyang / Yuen KinNing | 🟢 完成 |
 | Epic C — C-1..C-7 (含原 Won't 的 C-3/4/5)    | Xu Ziyang / Xu Zihe      | 🟢 完成 |
 | Vitest 单元测试（DoD 要求）                       | Yuen KinNing | ⬜ 待开始 |
-| Playwright E2E（A-2 拖拽 / B-3 打勾 / C-1 记录） | Ke Hongyi    | ⬜ 待开始 |
-| Supabase 生产库迁移                           | Xu Zihe      | ⬜ 待开始 |
+| Playwright E2E（A-2 拖拽 / B-3 打勾 / C-1 记录） | Ke Hongyi    | ⬜ 待开始（仓库内尚无用例；线上冒烟已手测） |
+| **生产部署 (Vercel + Render + Neon) + Deployment Manual** | Xu Ziyang | 🟢 完成（6/10） |
 | Jira Story 录入 Backlog                    | Ke Hongyi    | 🟡 进行中 |
-| Deliverable 3 演示视频 + 截图                  | Xu Ziyang    | ⬜ 待开始 |
+| Deliverable 3 演示视频 + 截图                  | Xu Ziyang    | 🟡 物料 V3.0 已出 |
 | Teams 频道发送技术栈 + Jira 链接                  | Xu Ziyang    | 🟡 待确认 |
 
-> 6/4 一日内拿下 Epic B 全部 + Epic C 全部（含 PO 决策追加的 5 条原 Won't）。本地 PostgreSQL 17 + Spring Boot + Vite 三件套全跑通；Supabase 生产环境在 D3 前迁移即可。下一步压力在测试覆盖与演示物料定稿。
+> 6/4 一日内拿下 Epic B 全部 + Epic C 全部（含 PO 决策追加的 5 条原 Won't）。本地 PostgreSQL 17 + Spring Boot + Vite 三件套全跑通。**6/10 生产环境已部署上线**（Vercel + Render + Neon，详见 §3 部署说明与《Deployment Manual V1.0》）。剩余压力集中在**自动化测试覆盖**（Vitest + Playwright，DoD 卡点）与演示物料定稿。
 
 ### Epic A 完成增量 (6/2–6/3)
 - A-1 主界面：4 分类网格、卡片 120×120px、对比度 ≥ 4.5:1。
@@ -170,14 +175,16 @@
 - [x] Epic A 之 A-1/A-2/A-4/A-5 全部端到端跑通 ✅（A-5 改造为"上传即建卡"）
 - [x] Epic C 之 C-1..C-7 全部端到端跑通 ✅（每条 AC 用 curl 走过）
 - [x] Epic B 之 B-1/B-2/B-3/B-4 全部端到端跑通 ✅（max-10 / 高亮 / 庆祝 / 模板 CRUD）
-- [ ] 为 Epic A 补 Vitest 单元测试 + Playwright E2E（DoD 要求）
+- [x] **生产环境部署上线** ✅（6/10）：Vercel 前端 + Render 后端 + Neon 数据库；配置外置 + CORS 放行 `*.vercel.app`；线上注册/登录 Playwright 冒烟通过；产出《Deployment Manual V1.0》
+- [x] **Deliverable 3 物料** ✅：D3 V3.0 PDF 已出（6/10）
 - [ ] 在 Jira 中补全全部 13 条 Story (A/B/C 模块) 并挂到对应 Epic
 - [ ] 把前端 / 后端技术栈 + Jira 看板链接发到 Teams 私有频道 (老师要求)
-- [ ] **写 Vitest 单元测试**（DoD 卡点）：Pinia store 逻辑 + 关键组件渲染
-- [ ] **写 Playwright E2E**（DoD 卡点）：A-2 拖拽拼句 / B-3 打勾庆祝 / C-1 行为记录 3 端到端
-- [ ] **6/7 Deliverable 3 提交**：演示视频 + 截图 + 体验账号 — 剩余 **3 天**
-- [ ] Supabase 生产库迁移（schema.sql 复用 + RLS Policy 重建）
-- [ ] **6/15 项目展示**：演示稿 + 现场演示流程 — 剩余 **11 天**
+- [ ] **写 Vitest 单元测试**（DoD 卡点，当前 0 个）：Pinia store 逻辑 + 关键组件渲染；需先把 `vitest` 加入 `frontend/package.json`
+- [ ] **写 Playwright E2E**（DoD 卡点，仓库内尚无用例）：A-2 拖拽拼句 / B-3 打勾庆祝 / C-1 行为记录 3 端到端（落地为可入 CI 的用例，而非一次性脚本）
+- [ ] **修 CI**：`ci.yml` 的 `frontend-test` 跑 `vitest run` 但无测试会失败；`backend-test` 仍引用已废弃的 `SUPABASE_DB_*` 环境变量名（应改 `DATABASE_*`）；CI deploy 段仍写 Fly.io，待对齐 Render
+- [ ] 同步架构/Workflow 文档中的 Supabase → Neon、Fly.io → Render
+- [ ] （可选）上传图片持久化：Render 临时磁盘重启即丢，接 Supabase Storage / Cloudinary
+- [ ] **6/15 项目展示**：演示稿 V1.0 定稿 + 现场演示流程彩排 — 剩余 **5 天**
 
 ---
 
@@ -197,3 +204,4 @@
 | v1.6 | 2026-06-04 | Ke Hongyi | **Epic B 全部 4 个 Story (B-1..B-4) 完成并端到端验证**：B-1 家长 schedule builder（≤10 steps 后端硬校验）；B-2 child 视图 current 强高亮 + next 半高亮；B-3 大复选框打勾 + ✓ pop 动画 + 全完成 🎉 庆祝 + Start Over；B-4 命名模板 list/edit/delete（删除级联清 instance）；ParentNav 加 Schedule tab，ChildPecsView 加 🗓️ 入口；至此 Epic A/B/C 全部完成 |
 | v1.7 | 2026-06-04 | Ke Hongyi | 大刷新：里程碑 R1 🟢、R2 🟢（功能侧）；§4 Current Sprint 改为 Sprint 2 收尾视角；估点统计去除"待做"列；Velocity 表回填 Sprint 1=39 / Sprint 2=52；Action Items 切到测试 + Deliverable + 演示，移除已完成的功能开发条目 |
 | v1.8 | 2026-06-04 | Ke Hongyi | **A-2 升级为双向 PECS 对话**：词卡库 16→53（新增 People/Action/Time 三分类）；sentence 表去 child_id 改 family_id + sender_role；新增 `/child/chat` + `/parent/chat` 共用 ChatComposer 组件 + MessageBubble；polling 3 s；child 端首页加 💬 入口，ParentNav 加 Chat tab。端到端实测：child→parent→child 来回各 200 + 增量 polling 正确 |
+| v1.9 | 2026-06-10 | Xu Ziyang | **生产部署上线**：前端 Vercel + 后端 Render(Docker) + 数据库 Neon(PG17)；后端配置外置为环境变量、根目录 Dockerfile、CORS `allowedOriginPatterns` 放行 `*.vercel.app`；Playwright 真机冒烟注册/登录通过；产出《Deployment Manual V1.0》。**计划偏差**：Supabase→Neon（免费额度满）、Fly.io→Render（免绑卡）。里程碑加"生产部署上线 🟢"、D3 转 🟢、演示稿转 🟡；Action Items 勾掉部署/D3，新增「修 CI（vitest/SUPABASE_DB_*/Fly.io 过时）」「同步架构&Workflow 文档平台名」「图片持久化(可选)」；6/15 演示倒计时刷新为 5 天 |
