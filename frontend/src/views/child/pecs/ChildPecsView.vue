@@ -3,11 +3,18 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCardStore, type Card } from '../../../stores/cards'
 import { useDiaryStore } from '../../../stores/diary'
+import { useAuthStore } from '../../../stores/auth'
 import { assetUrl } from '../../../api/client'
 
 const store = useCardStore()
 const diary = useDiaryStore()
+const auth = useAuthStore()
 const router = useRouter()
+
+function logout() {
+  auth.logout()
+  router.push('/')
+}
 const activeCategory = ref('Eat')
 const dragging = ref(false)
 const feedbackCard = ref<Card | null>(null)
@@ -78,6 +85,14 @@ async function onSaveSentence() {
 
 <template>
   <div class="min-h-screen bg-amber-50 flex flex-col select-none">
+
+    <!-- Top bar: log out (small, secondary action) -->
+    <div class="flex justify-end px-4 pt-3">
+      <button @click="logout" aria-label="Log out"
+        class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/80 shadow text-gray-500 text-sm font-semibold hover:bg-white active:scale-95 transition">
+        <span class="text-lg">🚪</span> Log out
+      </button>
+    </div>
 
     <!-- Sentence Bar (A-2) -->
     <div

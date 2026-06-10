@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS diary_entry (
     id BIGSERIAL PRIMARY KEY,
     child_id BIGINT NOT NULL REFERENCES users(id),
     emotion_card_id BIGINT,
-    doodle_url VARCHAR(500),
+    doodle_url TEXT,
     created_at TIMESTAMP DEFAULT NOW()
 );
 

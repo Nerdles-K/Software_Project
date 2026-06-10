@@ -188,14 +188,18 @@ function cancelEdit() {
             class="px-4 py-3 rounded-xl border border-gray-300 text-lg">
             <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
           </select>
+          <!-- Custom English button: hides the native file input whose label
+               text is localized by the browser (e.g. shows "选择文件" on zh). -->
           <label class="flex-1">
             <input type="file" accept="image/jpeg,image/png"
               @change="handleFileSelect"
               :disabled="uploading"
-              class="block w-full text-sm text-gray-600
-                file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0
-                file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-600
-                hover:file:bg-blue-100 disabled:opacity-50" />
+              class="hidden" />
+            <span
+              class="inline-block px-4 py-2 rounded-xl bg-blue-50 text-blue-600 text-sm font-semibold cursor-pointer hover:bg-blue-100 select-none"
+              :class="uploading ? 'opacity-50 pointer-events-none' : ''">
+              Choose image
+            </span>
           </label>
         </div>
         <p v-if="uploading" class="text-sm text-blue-500">Uploading...</p>
