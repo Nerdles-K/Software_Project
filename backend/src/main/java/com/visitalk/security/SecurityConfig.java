@@ -51,7 +51,13 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfig() {
         var config = new CorsConfiguration();
-        config.setAllowedOrigins(allowedOrigins);
+        // Use origin patterns so all Vercel deployments (incl. preview URLs) are
+        // allowed without re-listing each one; configured origins still apply.
+        var patterns = new java.util.ArrayList<>(allowedOrigins);
+        if (!patterns.contains("https://*.vercel.app")) {
+            patterns.add("https://*.vercel.app");
+        }
+        config.setAllowedOriginPatterns(patterns);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);

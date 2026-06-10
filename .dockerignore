@@ -1,0 +1,16 @@
+# Keep the Render build context lean: only backend sources are needed.
+frontend/
+doc/
+prototypes/
+node_modules/
+**/node_modules/
+**/build/
+**/.gradle/
+**/bin/
+**/dist/
+backend/uploads/
+*.log
+.git/
+.DS_Store
+*.pdf
+*.csv
