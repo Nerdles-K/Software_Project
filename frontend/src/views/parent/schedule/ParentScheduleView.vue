@@ -18,6 +18,51 @@ const error = ref('')
 
 const categories = ['Eat', 'Drink', 'Play', 'Feel']
 
+// One-click sample scenario: a picture guide for a supermarket trip. Creates
+// the emoji step-cards (category "Shop") then a schedule template from them.
+const SAMPLE_SUPERMARKET = {
+  name: 'Go to the supermarket',
+  steps: [
+    { emoji: '👟', label: 'Put on shoes' },
+    { emoji: '🚶', label: 'Walk to the shop' },
+    { emoji: '🛒', label: 'Get a cart' },
+    { emoji: '🍎', label: 'Get apples' },
+    { emoji: '🥛', label: 'Get milk' },
+    { emoji: '🍞', label: 'Get bread' },
+    { emoji: '💳', label: 'Pay at the till' },
+    { emoji: '🏠', label: 'Go home' },
+  ],
+}
+const addingSample = ref(false)
+const sampleMsg = ref('')
+
+async function addSampleSupermarket() {
+  sampleMsg.value = ''
+  if (sched.templates.some(t => t.name === SAMPLE_SUPERMARKET.name)) {
+    sampleMsg.value = 'You already have this schedule.'
+    return
+  }
+  addingSample.value = true
+  try {
+    const ids: number[] = []
+    for (const step of SAMPLE_SUPERMARKET.steps) {
+      const card = await cardStore.createCard({
+        category: 'Shop',
+        labelI18n: step.label,
+        imageUrl: `emoji:${step.emoji}`,
+        isCustom: true,
+      })
+      ids.push(card.id)
+    }
+    await sched.createTemplate(SAMPLE_SUPERMARKET.name, ids)
+    sampleMsg.value = 'Added! Your child can now run it from their 🗓️ schedule.'
+  } catch (e) {
+    sampleMsg.value = e instanceof Error ? e.message : 'Could not add sample'
+  } finally {
+    addingSample.value = false
+  }
+}
+
 onMounted(async () => {
   await Promise.all([sched.fetchTemplates(), cardStore.fetchCards()])
 })
@@ -182,6 +227,22 @@ function isPhoto(card: Card | undefined): boolean {
             {{ editing ? 'Save changes' : 'Create schedule' }}
           </button>
         </div>
+      </div>
+
+      <!-- One-click sample scenario -->
+      <div v-if="!showBuilder" class="bg-white rounded-2xl shadow p-4 mb-4">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <p class="font-semibold text-gray-800">🛒 Sample: Go to the supermarket</p>
+            <p class="text-xs text-gray-500">An 8-step picture guide for a shopping trip — add it, then Edit to tweak.</p>
+          </div>
+          <button @click="addSampleSupermarket" :disabled="addingSample"
+            class="px-4 py-2 rounded-xl bg-emerald-500 text-white font-semibold hover:bg-emerald-600 disabled:opacity-50 whitespace-nowrap">
+            {{ addingSample ? 'Adding…' : 'Add' }}
+          </button>
+        </div>
+        <p v-if="sampleMsg" class="text-sm mt-2"
+          :class="sampleMsg.startsWith('Added') ? 'text-emerald-600' : 'text-gray-500'">{{ sampleMsg }}</p>
       </div>
 
       <!-- Template list (B-4) -->

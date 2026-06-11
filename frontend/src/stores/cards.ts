@@ -47,6 +47,10 @@ export const useCardStore = defineStore('cards', () => {
   const cards = ref<Card[]>([])
   const loading = ref(false)
 
+  // Full family-wide card set, used by MessageBubble to resolve sentence.cardIds
+  // regardless of which category the PECS grid is currently filtered to.
+  const allCards = ref<Card[]>([])
+
   // Sentence bar (A-2)
   const sentenceCards = ref<Card[]>([])
 
@@ -60,6 +64,15 @@ export const useCardStore = defineStore('cards', () => {
     } finally {
       loading.value = false
     }
+  }
+
+  // Family-wide fetch for chat views. Always refetches so a card the parent
+  // just created shows up in the conversation feed without manual reload.
+  // Independent of the category-filtered `cards` used by the PECS grid.
+  async function fetchAllCards() {
+    const auth = useAuthStore()
+    const params = new URLSearchParams({ familyId: auth.familyId })
+    allCards.value = await api<Card[]>(`/api/cards?${params}`)
   }
 
   // A-2: Drag card to sentence bar
@@ -88,13 +101,14 @@ export const useCardStore = defineStore('cards', () => {
   }
 
   // A-4: Parent card management
-  async function createCard(card: Partial<Card>) {
+  async function createCard(card: Partial<Card>): Promise<Card> {
     const auth = useAuthStore()
     const created = await api<Card>('/api/cards', {
       method: 'POST',
       body: JSON.stringify({ ...card, familyId: auth.familyId }),
     })
     cards.value.push(created)
+    return created
   }
 
   async function deleteCard(id: number) {
@@ -147,8 +161,9 @@ export const useCardStore = defineStore('cards', () => {
   }
 
   return {
-    cards, loading, sentenceCards,
-    fetchCards, addToSentence, removeFromSentence, clearSentence, saveSentence,
+    cards, allCards, loading, sentenceCards,
+    fetchCards, fetchAllCards,
+    addToSentence, removeFromSentence, clearSentence, saveSentence,
     createCard, deleteCard, reorderCards, renameCard,
     uploadPhoto, uploadAndCreateCard,
   }
