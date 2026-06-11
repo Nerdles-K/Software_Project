@@ -1,16 +1,19 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, watch, nextTick } from 'vue'
 import { VueDraggable } from 'vue-draggable-plus'
-import { useCardStore, type Card } from '../../../stores/cards'
+import { useCardStore, BOARD_CATEGORIES, CATEGORIES, type Card } from '../../../stores/cards'
 import { assetUrl } from '../../../api/client'
 import ParentNav from '../../../components/ParentNav.vue'
 
-const CATEGORY_EMOJI: Record<string, string> = {
-  Eat: '🍎', Drink: '🥛', Play: '⚽', Feel: '😊',
-}
+const CATEGORY_EMOJI: Record<string, string> = Object.fromEntries(
+  CATEGORIES.map(c => [c.key, c.emoji])
+)
 
 // Curated emoji palette grouped by category — parent picks one when creating a text card.
 const EMOJI_PALETTE: Record<string, string[]> = {
+  Need: ['🆘', '➕', '✅', '👍', '🙅', '🥺', '🙏', '⏳', '🙋', '🚽', '🤕', '🧘'],
+  Daily: ['🌅', '🪥', '🧼', '👕', '👟', '💇', '🍽️', '💊', '🧹', '🛁', '😴', '🎒'],
+  Place: ['🏠', '🏫', '🏞️', '🏪', '🏥', '🛏️', '🚻', '🚗', '🛝', '🌳'],
   Eat: ['🍎', '🍞', '🍪', '🍌', '🍕', '🥪', '🥕', '🥚', '🧀', '🍰', '🍇', '🍓'],
   Drink: ['🥛', '☕', '🧃', '🥤', '🍵', '🫖'],
   Play: ['⚽', '🧩', '🎨', '🎲', '🚗', '📚', '🏀', '🧸', '🎮', '🎵'],
@@ -45,12 +48,12 @@ const editingId = ref<number | null>(null)
 const editingLabel = ref('')
 const editInputRef = ref<HTMLInputElement | null>(null)
 
-const categories = ['Eat', 'Drink', 'Play', 'Feel']
+const categories = BOARD_CATEGORIES.map(c => c.key)
 
 // Writable per-category lists for VueDraggable v-model
-const grouped = reactive<Record<string, Card[]>>({
-  Eat: [], Drink: [], Play: [], Feel: [],
-})
+const grouped = reactive<Record<string, Card[]>>(
+  Object.fromEntries(categories.map(c => [c, [] as Card[]]))
+)
 
 function rebuildGrouped() {
   for (const c of categories) grouped[c] = []

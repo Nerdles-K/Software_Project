@@ -9,9 +9,15 @@ import { useAuthStore } from './auth'
  * are the original PECS categories.
  */
 export const CATEGORIES = [
+  // Conversation grammar (chat composer): subjects + verbs + adverbs.
   { key: 'People', emoji: '👨‍👩‍👧' },
   { key: 'Action', emoji: '🤲' },
   { key: 'Time',   emoji: '⏰' },
+  // Daily-life PECS board: requests, self-care routines, places, and the
+  // concrete object categories.
+  { key: 'Need',   emoji: '🙏' },
+  { key: 'Daily',  emoji: '🪥' },
+  { key: 'Place',  emoji: '🏠' },
   { key: 'Eat',    emoji: '🍎' },
   { key: 'Drink',  emoji: '🥛' },
   { key: 'Play',   emoji: '⚽' },
@@ -19,6 +25,15 @@ export const CATEGORIES = [
 ] as const
 
 export type CategoryKey = (typeof CATEGORIES)[number]['key']
+
+/**
+ * The subset shown on the PECS board (child home, parent card management,
+ * schedule builder). Excludes People/Action/Time — those are sentence-grammar
+ * pieces used only in the chat composer.
+ */
+export const BOARD_CATEGORIES = CATEGORIES.filter(
+  c => !['People', 'Action', 'Time'].includes(c.key)
+)
 
 const CATEGORY_EMOJI: Record<string, string> = Object.fromEntries(
   CATEGORIES.map(c => [c.key, c.emoji])

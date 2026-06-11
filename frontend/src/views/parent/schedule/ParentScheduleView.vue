@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useScheduleStore, type ScheduleTemplate, MAX_STEPS } from '../../../stores/schedule'
-import { useCardStore, type Card } from '../../../stores/cards'
+import { useCardStore, BOARD_CATEGORIES, type Card } from '../../../stores/cards'
 import { assetUrl } from '../../../api/client'
 import ParentNav from '../../../components/ParentNav.vue'
 
@@ -16,7 +16,7 @@ const filterCategory = ref<string>('Eat')
 const deleteTarget = ref<ScheduleTemplate | null>(null)
 const error = ref('')
 
-const categories = ['Eat', 'Drink', 'Play', 'Feel']
+const categories = BOARD_CATEGORIES.map(c => c.key)
 
 // One-click sample scenario: a picture guide for a supermarket trip. Creates
 // the emoji step-cards (category "Shop") then a schedule template from them.

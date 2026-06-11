@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useCardStore, type Card } from '../../../stores/cards'
+import { useCardStore, BOARD_CATEGORIES, type Card } from '../../../stores/cards'
 import { useDiaryStore } from '../../../stores/diary'
 import { useAuthStore } from '../../../stores/auth'
 import { assetUrl } from '../../../api/client'
@@ -15,17 +15,11 @@ function logout() {
   auth.logout()
   router.push('/')
 }
-const activeCategory = ref('Eat')
+const categories = BOARD_CATEGORIES
+const activeCategory = ref<string>(categories[0].key)
 const dragging = ref(false)
 const feedbackCard = ref<Card | null>(null)
 const draggedCard = ref<Card | null>(null)
-
-const categories = [
-  { key: 'Eat', emoji: '🍎' },
-  { key: 'Drink', emoji: '🥛' },
-  { key: 'Play', emoji: '⚽' },
-  { key: 'Feel', emoji: '😊' },
-]
 
 function isPhoto(card: Card): boolean {
   return !!card.imageUrl && card.imageUrl.startsWith('/uploads/')
@@ -152,7 +146,7 @@ async function onSaveSentence() {
     </button>
 
     <!-- Category Tabs (A-1) -->
-    <div class="flex justify-center gap-3 px-4 py-4">
+    <div class="flex gap-3 px-4 py-4 overflow-x-auto">
       <button
         v-for="cat in categories" :key="cat.key"
         @click="selectCategory(cat.key)"

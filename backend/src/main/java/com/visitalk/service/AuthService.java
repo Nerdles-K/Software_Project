@@ -16,11 +16,14 @@ public class AuthService {
     private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
     private final PasswordEncoder encoder;
+    private final CardSeeder cardSeeder;
 
-    public AuthService(UserRepository userRepository, JwtUtil jwtUtil, PasswordEncoder encoder) {
+    public AuthService(UserRepository userRepository, JwtUtil jwtUtil, PasswordEncoder encoder,
+                       CardSeeder cardSeeder) {
         this.userRepository = userRepository;
         this.jwtUtil = jwtUtil;
         this.encoder = encoder;
+        this.cardSeeder = cardSeeder;
     }
 
     public Optional<LoginResponse> login(String email, String password) {
@@ -53,6 +56,8 @@ public class AuthService {
         }
 
         user = userRepository.save(user);
+        // Give the brand-new family the full default card library.
+        cardSeeder.seedDefaultCards(user.getFamilyId());
         String token = jwtUtil.generateToken(user.getId(), user.getRole(), user.getFamilyId());
         return new LoginResponse(token, user.getRole(), user.getFamilyId());
     }
