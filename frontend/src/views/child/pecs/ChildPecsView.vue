@@ -180,6 +180,10 @@ async function onSaveSentence() {
           <img v-if="isPhoto(card)" :src="assetUrl(card.imageUrl)" :alt="card.labelI18n"
             class="w-16 h-16 object-cover rounded-xl" />
           <span v-else class="text-5xl">{{ cardIconChar(card) }}</span>
+          <!-- Word label under the picture (authentic PECS: image + word). -->
+          <span class="mt-1.5 text-sm font-semibold text-gray-700 text-center leading-tight">
+            {{ card.labelI18n }}
+          </span>
         </div>
       </div>
       <div v-if="!store.loading && store.cards.length === 0"
