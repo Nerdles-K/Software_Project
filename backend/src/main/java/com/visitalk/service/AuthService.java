@@ -37,7 +37,7 @@ public class AuthService {
         return Optional.of(new LoginResponse(token, user.getRole(), user.getFamilyId()));
     }
 
-    public LoginResponse register(String email, String password, String role) {
+    public LoginResponse register(String email, String password, String role, String familyCode) {
         if (userRepository.findByEmail(email).isPresent()) {
             throw new IllegalArgumentException("Email already registered");
         }
@@ -45,19 +45,39 @@ public class AuthService {
             throw new IllegalArgumentException("Role must be 'parent' or 'child'");
         }
 
+        String code = familyCode == null ? "" : familyCode.trim().toUpperCase();
+        boolean joiningExisting = !code.isEmpty();
+        String familyId;
+
+        if (joiningExisting) {
+            // Join an existing family via its code, with a one-parent-one-child invariant.
+            if (!userRepository.existsByFamilyId(code)) {
+                throw new IllegalArgumentException("Invalid family code");
+            }
+            if (userRepository.findFirstByFamilyIdAndRole(code, role).isPresent()) {
+                throw new IllegalArgumentException("This family already has a " + role);
+            }
+            familyId = code;
+        } else {
+            // No code → start a brand-new family.
+            familyId = "FAM" + UUID.randomUUID().toString().substring(0, 5).toUpperCase();
+        }
+
         User user = new User();
         user.setEmail(email);
         user.setPasswordHash(encoder.encode(password));
         user.setRole(role);
-        user.setFamilyId("FAM" + UUID.randomUUID().toString().substring(0, 5).toUpperCase());
+        user.setFamilyId(familyId);
 
         if ("parent".equals(role)) {
             user.setPinHash(encoder.encode("1234"));
         }
 
         user = userRepository.save(user);
-        // Give the brand-new family the full default card library.
-        cardSeeder.seedDefaultCards(user.getFamilyId());
+        // Only a brand-new family needs the default card library seeded.
+        if (!joiningExisting) {
+            cardSeeder.seedDefaultCards(familyId);
+        }
         String token = jwtUtil.generateToken(user.getId(), user.getRole(), user.getFamilyId());
         return new LoginResponse(token, user.getRole(), user.getFamilyId());
     }

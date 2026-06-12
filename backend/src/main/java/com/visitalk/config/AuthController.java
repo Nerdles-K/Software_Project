@@ -33,7 +33,7 @@ public class AuthController {
     public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
         try {
             LoginResponse result = authService.register(
-                request.getEmail(), request.getPassword(), request.getRole());
+                request.getEmail(), request.getPassword(), request.getRole(), request.getFamilyCode());
             return ResponseEntity.ok(result);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));

@@ -2,12 +2,23 @@
 import { ref, onMounted } from 'vue'
 import { useDiaryStore } from '../../../stores/diary'
 import { useBehaviorStore } from '../../../stores/behavior'
+import { useAuthStore } from '../../../stores/auth'
 import ParentNav from '../../../components/ParentNav.vue'
 
 const diary = useDiaryStore()
 const behavior = useBehaviorStore()
+const auth = useAuthStore()
 const saving = ref(false)
 const error = ref('')
+
+const copied = ref(false)
+async function copyFamilyCode() {
+  try {
+    await navigator.clipboard.writeText(auth.familyId)
+    copied.value = true
+    setTimeout(() => (copied.value = false), 1500)
+  } catch { /* clipboard may be blocked; the code is shown on screen anyway */ }
+}
 
 onMounted(async () => {
   await Promise.all([
@@ -41,6 +52,24 @@ async function dismiss(tag: string) {
     <header class="mb-6">
       <h1 class="text-2xl font-bold">Settings</h1>
     </header>
+
+    <!-- Family code: parent shares this so their child can join the same family -->
+    <section class="max-w-xl mx-auto mb-6 bg-slate-800 rounded-lg p-5 border border-slate-700">
+      <h2 class="font-semibold">Your family code</h2>
+      <p class="text-sm text-slate-400 mt-1 mb-3">
+        Give this code to your child — they enter it when registering so you both
+        share one family (cards, chat, schedules and diary status).
+      </p>
+      <div class="flex items-center gap-3">
+        <code class="text-xl font-bold tracking-widest bg-slate-900 px-4 py-2 rounded-md border border-slate-700">
+          {{ auth.familyId || '—' }}
+        </code>
+        <button @click="copyFamilyCode"
+          class="px-3 py-2 rounded-md bg-slate-700 hover:bg-slate-600 text-sm font-semibold">
+          {{ copied ? 'Copied ✓' : 'Copy' }}
+        </button>
+      </div>
+    </section>
 
     <!-- C-5: trigger alerts banner -->
     <section v-if="behavior.alerts.length > 0"

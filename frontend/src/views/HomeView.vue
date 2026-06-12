@@ -8,6 +8,7 @@ const router = useRouter()
 
 const email = ref('')
 const password = ref('')
+const familyCode = ref('')
 const loading = ref(false)
 const tab = ref<'login' | 'register'>('login')
 const role = ref<'parent' | 'child'>('parent')
@@ -16,7 +17,7 @@ async function handleSubmit() {
   loading.value = true
   const ok = tab.value === 'login'
     ? await auth.login(email.value, password.value)
-    : await auth.register(email.value, password.value, role.value)
+    : await auth.register(email.value, password.value, role.value, familyCode.value.trim() || undefined)
   loading.value = false
   if (ok) {
     router.push(auth.isChild ? '/child/pecs' : '/parent/pecs')
@@ -76,6 +77,22 @@ function fillDemo(parent: boolean) {
           <input type="radio" v-model="role" value="child" class="sr-only" />
           <span class="font-semibold text-gray-800">Child</span>
         </label>
+      </div>
+
+      <!-- Family code (register only): link parent & child into one family -->
+      <div v-if="tab === 'register'" class="flex flex-col gap-1">
+        <input
+          v-model="familyCode"
+          type="text"
+          placeholder="Family code (optional)"
+          autocapitalize="characters"
+          class="px-4 py-3 rounded-xl border border-gray-300 text-lg focus:outline-none focus:ring-2 focus:ring-orange-400"
+        />
+        <p class="text-xs text-gray-500 px-1">
+          {{ role === 'parent'
+            ? 'Leave empty to start a new family — you’ll get a code to add your child.'
+            : 'Enter your parent’s family code to join their family.' }}
+        </p>
       </div>
 
       <button
