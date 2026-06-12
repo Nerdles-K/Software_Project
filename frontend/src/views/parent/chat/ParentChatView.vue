@@ -23,8 +23,10 @@ async function refresh() {
 }
 
 onMounted(async () => {
+  // Always fetch the family-wide card set so MessageBubble can resolve cards
+  // from any category, including ones added by the parent moments ago.
   await Promise.all([
-    cards.cards.length === 0 ? cards.fetchCards() : Promise.resolve(),
+    cards.fetchAllCards(),
     sentences.fetchAll(),
   ])
   scrollToBottom()

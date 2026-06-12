@@ -47,10 +47,15 @@ export const useSentenceStore = defineStore('sentences', () => {
     return s
   }
 
-  /** Resolve card ids to full Card objects for rendering. Skips unknown ids. */
+  /**
+   * Resolve card ids to full Card objects for rendering. Skips unknown ids.
+   * Prefers `allCards` (family-wide) because the category-filtered `cards`
+   * would drop messages whose cards are in a non-active category.
+   */
   function expand(s: Sentence): Card[] {
-    const cards = useCardStore()
-    const byId = new Map(cards.cards.map(c => [c.id, c]))
+    const store = useCardStore()
+    const pool = store.allCards.length > 0 ? store.allCards : store.cards
+    const byId = new Map(pool.map(c => [c.id, c]))
     return s.cardIds.map(id => byId.get(id)).filter((c): c is Card => !!c)
   }
 

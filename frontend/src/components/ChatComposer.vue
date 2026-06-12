@@ -19,11 +19,13 @@ const sending = ref(false)
 const feedbackId = ref<number | null>(null)
 
 onMounted(async () => {
-  if (cards.cards.length === 0) await cards.fetchCards()
+  // Need the family-wide set so every category tab has its cards, regardless
+  // of which category the PECS grid was last filtered to.
+  if (cards.allCards.length === 0) await cards.fetchAllCards()
 })
 
 const categoryCards = computed(() =>
-  cards.cards.filter(c => c.category === activeCategory.value))
+  cards.allCards.filter(c => c.category === activeCategory.value))
 
 function addCard(card: Card) {
   draft.value.push(card)
