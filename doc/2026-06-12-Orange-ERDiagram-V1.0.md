@@ -2,11 +2,11 @@
 
 PostgreSQL 17 (Neon) · 11 tables · source of truth: `backend/src/main/resources/schema.sql`
 
-> **For your slide:** a pre-rendered PNG is included — [er-diagram.png](er-diagram.png).
-> The ```mermaid``` block below is the editable source (GitHub renders it automatically;
-> or paste it into <https://mermaid.live> to re-export).
+> **For your slide:** use [er-diagram.svg](er-diagram.svg) — it's **vector**, so it
+> stays crisp at any zoom (no blurry text). A hi-res [er-diagram.png](er-diagram.png)
+> (3136×1108) is also included. The ```mermaid``` block below is the editable source.
 
-![VisiTalk ER diagram](er-diagram.png)
+![VisiTalk ER diagram](er-diagram.svg)
 
 ```mermaid
 erDiagram
