@@ -65,6 +65,15 @@ async function addSampleSupermarket() {
 
 onMounted(async () => {
   await Promise.all([sched.fetchTemplates(), cardStore.fetchCards()])
+  // Non-critical: a missing /status endpoint must not break the page.
+  await sched.fetchTodayStatus().catch(() => {})
+})
+
+// Today's completion per template, keyed by template id.
+const statusById = computed(() => {
+  const m = new Map<number, (typeof sched.todayStatus)[number]>()
+  for (const s of sched.todayStatus) m.set(s.templateId, s)
+  return m
 })
 
 const cardsById = computed(() => {
@@ -254,7 +263,22 @@ function isPhoto(card: Card | undefined): boolean {
         <div v-for="t in sched.templates" :key="t.id"
           class="bg-white rounded-2xl shadow p-4 flex items-center justify-between gap-3">
           <div class="flex-1 min-w-0">
-            <h4 class="font-bold text-lg text-gray-900">{{ t.name }}</h4>
+            <div class="flex items-center gap-2 flex-wrap">
+              <h4 class="font-bold text-lg text-gray-900">{{ t.name }}</h4>
+              <!-- Today's completion (B-2/B-3): green when the child finished it today -->
+              <span v-if="statusById.get(t.id)?.completed"
+                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold">
+                ✓ Completed today
+              </span>
+              <span v-else-if="(statusById.get(t.id)?.completedCount ?? 0) > 0"
+                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-xs font-semibold">
+                {{ statusById.get(t.id)?.completedCount }}/{{ statusById.get(t.id)?.totalSteps }} done today
+              </span>
+              <span v-else
+                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 text-xs font-semibold">
+                Not started today
+              </span>
+            </div>
             <p class="text-xs text-gray-500 mb-2">{{ t.steps.length }} steps</p>
             <div class="flex gap-1 flex-wrap">
               <span v-for="(id, i) in t.steps" :key="`prev-${t.id}-${i}`"

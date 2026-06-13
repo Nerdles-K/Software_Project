@@ -140,6 +140,33 @@ public class ScheduleController {
         ));
     }
 
+    /**
+     * Today's completion status for every template in the family — read-only,
+     * does NOT auto-create instances. Lets the parent dashboard show which
+     * schedules the child has finished today. Both roles can call this.
+     */
+    @GetMapping("/status")
+    public ResponseEntity<?> todayStatus(HttpServletRequest req) {
+        String familyId = (String) req.getAttribute("familyId");
+        LocalDate today = LocalDate.now();
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (ScheduleTemplate t : templates.findByFamilyId(familyId)) {
+            int total = t.getSteps() == null ? 0 : t.getSteps().length;
+            int completedCount = instances.findByTemplateAndDate(t.getId(), today)
+                .map(inst -> (int) Arrays.stream(inst.getCompletedStepIndices())
+                    .filter(i -> i != null && i >= 0 && i < total)
+                    .distinct().count())
+                .orElse(0);
+            Map<String, Object> row = new HashMap<>();
+            row.put("templateId", t.getId());
+            row.put("totalSteps", total);
+            row.put("completedCount", completedCount);
+            row.put("completed", total > 0 && completedCount >= total);
+            out.add(row);
+        }
+        return ResponseEntity.ok(out);
+    }
+
     /** B-3: toggle a step's completion (0-based index). Children may call this. */
     @PutMapping("/instances/{id}/step")
     public ResponseEntity<?> toggleStep(@PathVariable Long id,

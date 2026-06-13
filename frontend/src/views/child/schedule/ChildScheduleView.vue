@@ -78,8 +78,8 @@ async function tick(index: number) {
 }
 
 function exit() {
-  // B-3: "All steps complete → celebration." User taps OK → leave the schedule.
-  router.push({ name: 'home' })
+  // B-3: "All steps complete → celebration." User taps OK → back to the child home.
+  router.push({ name: 'child-pecs' })
 }
 </script>
 

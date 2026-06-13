@@ -24,14 +24,27 @@ export interface ScheduleTodayView {
   cards: Card[]
 }
 
+export interface ScheduleStatus {
+  templateId: number
+  totalSteps: number
+  completedCount: number
+  completed: boolean
+}
+
 export const MAX_STEPS = 10
 
 export const useScheduleStore = defineStore('schedule', () => {
   const templates = ref<ScheduleTemplate[]>([])
   const todayView = ref<ScheduleTodayView | null>(null)
+  const todayStatus = ref<ScheduleStatus[]>([])
 
   async function fetchTemplates() {
     templates.value = await api<ScheduleTemplate[]>('/api/schedules/templates')
+  }
+
+  async function fetchTodayStatus() {
+    todayStatus.value = await api<ScheduleStatus[]>('/api/schedules/status')
+    return todayStatus.value
   }
 
   async function createTemplate(name: string, steps: number[]) {
@@ -73,8 +86,8 @@ export const useScheduleStore = defineStore('schedule', () => {
   }
 
   return {
-    templates, todayView, MAX_STEPS,
-    fetchTemplates, createTemplate, updateTemplate, deleteTemplate,
+    templates, todayView, todayStatus, MAX_STEPS,
+    fetchTemplates, fetchTodayStatus, createTemplate, updateTemplate, deleteTemplate,
     fetchToday, toggleStep,
   }
 })
