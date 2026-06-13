@@ -1,0 +1,34 @@
+# Test profile: swap the Postgres datasource for an in-memory H2 so the full
+# Spring context boots without external infra. PostgreSQL compatibility mode keeps
+# the JPA entities (users / pictogram_card / diary_entry / report_share) mapping
+# cleanly. Hibernate creates the schema from the entities (create-drop) since the
+# real DB is migrated out-of-band. The Postgres-array-backed behavior_event table
+# is driven by raw JdbcTemplate SQL (unnest), so the analytics layer is covered by
+# the Mockito unit tests rather than this H2 context.
+spring:
+  datasource:
+    url: jdbc:h2:mem:visitalk_test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
+    username: sa
+    password: ""
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+  sql:
+    init:
+      # The production schema.sql uses Postgres-only syntax (BIGSERIAL, BIGINT[]),
+      # which H2 can't parse. Skip it and let Hibernate create the JPA-mapped tables
+      # (users / pictogram_card / ...) that the auth + cards flow under test needs.
+      mode: never
+
+app:
+  jwt:
+    secret: test-secret-key-for-visitalk-junit-suite-at-least-256-bits-long-xx
+    expiration-ms: 86400000
+  cors:
+    allowed-origins: http://localhost:3000
+
+logging:
+  level:
+    com.visitalk: WARN

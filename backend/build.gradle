@@ -27,6 +27,9 @@ dependencies {
     runtimeOnly 'org.postgresql:postgresql'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    // In-memory DB so the full Spring context (register/login/card-seeding) can be
+    // exercised end-to-end in tests without a real Postgres instance.
+    testRuntimeOnly 'com.h2database:h2'
 }
 
 tasks.named('test') {

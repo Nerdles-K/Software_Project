@@ -1,6 +1,7 @@
 package com.visitalk.behavior;
 
 import com.visitalk.dto.WeeklyReportResponse;
+import com.visitalk.repository.AlertDismissalRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -8,8 +9,8 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
-import org.springframework.web.server.ResponseStatusException;
 
+import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -26,6 +27,9 @@ class BehaviorAnalyticsServiceTest {
     @Mock
     private JdbcTemplate jdbcTemplate;
 
+    @Mock
+    private AlertDismissalRepository alertDismissals;
+
     private final String familyId = "FAM_TEST_123";
     private final LocalDate mockToday = LocalDate.of(2026, 6, 4);
 
@@ -35,21 +39,23 @@ class BehaviorAnalyticsServiceTest {
     }
 
     // ==========================================
-    // C-3: 记录不足3条时必须抛出 400
+    // C-3: 记录不足3条时返回 "insufficient" 状态（不再抛 400）
     // ==========================================
     @Test
-    void testC3_WeeklyReport_LessThanThree_ShouldThrowBadRequest() {
+    void testC3_WeeklyReport_LessThanThree_ShouldReturnInsufficient() {
         List<Map<String, Object>> mockDbRows = new ArrayList<>();
         mockDbRows.add(createLogMock(4, "Sensory Overload", mockToday.atTime(10, 0)));
         mockDbRows.add(createLogMock(3, "Routine Disrupted", mockToday.minusDays(1).atTime(12, 0)));
 
         when(jdbcTemplate.queryForList(anyString(), eq(familyId), any(), any())).thenReturn(mockDbRows);
 
-        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () ->
-            analyticsService.generateWeeklyReportData(familyId, mockToday));
+        WeeklyReportResponse report = analyticsService.generateWeeklyReportData(familyId, mockToday);
 
-        assertEquals(400, exception.getStatusCode().value());
-        assertTrue(exception.getReason().contains("不足3条"));
+        assertEquals("insufficient", report.getStatus());
+        assertTrue(report.getChartData().isEmpty());
+        assertTrue(report.getTop3Triggers().isEmpty());
+        assertEquals(LocalDate.of(2026, 6, 1), report.getWeekStartDate());
+        assertEquals(LocalDate.of(2026, 6, 7), report.getWeekEndDate());
     }
 
     // ==========================================
@@ -77,13 +83,20 @@ class BehaviorAnalyticsServiceTest {
     // C-5: 跨月连续触发预警
     // ==========================================
     @Test
-    void testC5_ConsecutiveTriggerAlert_CrossMonth_ShouldAlert() {
+    void testC5_ConsecutiveTriggerAlert_ThreeConsecutiveDays_ShouldAlert() {
+        // Anchor on "today" so the streak always falls inside the service's 30-day
+        // window. (The streak detector uses LocalDate.plusDays, so month/year
+        // boundaries are handled correctly regardless of where today lands.)
+        LocalDate today = LocalDate.now();
         List<Map<String, Object>> mockDbRows = new ArrayList<>();
-        mockDbRows.add(createLogMock(4, "Meltdown", LocalDateTime.of(2026, 5, 30, 22, 0)));
-        mockDbRows.add(createLogMock(4, "Meltdown", LocalDateTime.of(2026, 5, 31, 11, 0)));
-        mockDbRows.add(createLogMock(5, "Meltdown", LocalDateTime.of(2026, 6, 1, 9, 30)));
+        mockDbRows.add(createLogMock(4, "Meltdown", today.minusDays(2).atTime(22, 0)));
+        mockDbRows.add(createLogMock(4, "Meltdown", today.minusDays(1).atTime(11, 0)));
+        mockDbRows.add(createLogMock(5, "Meltdown", today.atTime(9, 30)));
 
         when(jdbcTemplate.queryForList(anyString(), eq(familyId), any())).thenReturn(mockDbRows);
+        // No prior dismissal, so the consecutive streak should surface as an alert.
+        when(alertDismissals.findByFamilyIdAndTriggerTag(anyString(), anyString()))
+            .thenReturn(Collections.emptyList());
 
         List<String> alerts = analyticsService.checkConsecutiveTriggerAlert(familyId, 3);
         assertTrue(alerts.contains("Meltdown"));
@@ -107,7 +120,9 @@ class BehaviorAnalyticsServiceTest {
         Map<String, Object> map = new HashMap<>();
         map.put("intensity", intensity);
         map.put("trigger_tag", tag);
-        map.put("occurred_at", time);
+        // JdbcTemplate returns timestamp columns as java.sql.Timestamp, which the
+        // service casts back to LocalDateTime — mirror that here, not a raw LocalDateTime.
+        map.put("occurred_at", Timestamp.valueOf(time));
         return map;
     }
 }
