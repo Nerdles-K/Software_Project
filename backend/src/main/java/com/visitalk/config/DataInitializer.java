@@ -41,7 +41,16 @@ public class DataInitializer implements CommandLineRunner {
             userRepository.save(child);
         }
 
-        // Refresh the demo family's default library on every boot (idempotent).
-        cardSeeder.seedDefaultCards(FAMILY);
+        // Top up EVERY family's default library on each boot (idempotent: inserts
+        // only missing default cards, never touches custom cards or sort order).
+        // This back-fills newly-added defaults — e.g. text-phrase cards — into
+        // families that registered before those defaults existed. Always includes
+        // the demo family, even on a fresh DB where it was just created above.
+        var families = new java.util.LinkedHashSet<String>();
+        families.add(FAMILY);
+        families.addAll(userRepository.findDistinctFamilyIds());
+        for (String familyId : families) {
+            cardSeeder.seedDefaultCards(familyId);
+        }
     }
 }

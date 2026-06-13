@@ -12,8 +12,9 @@ import org.springframework.stereotype.Component;
  * <p>The library is geared towards helping autistic children navigate everyday
  * routines: functional requests (Need), self-care steps (Daily), places (Place),
  * plus food/drink/play/feelings and the People/Action/Time conversation pieces.
- * Every card carries an English text label; the {@code emoji:<char>} icon is a
- * visual support for that word.
+ * Every card carries an English text label. Most cards use an {@code emoji:<char>}
+ * icon as a visual support for that word; a few are text-phrase pictograms
+ * ({@code text:<phrase>}) where the words themselves are the symbol.
  */
 @Component
 public class CardSeeder {
@@ -145,6 +146,20 @@ public class CardSeeder {
         {"Feel", "Shy", "emoji:😳"},
         {"Feel", "Surprised", "emoji:😲"},
         {"Feel", "Love", "emoji:🥰"},
+
+        // Text-phrase pictograms — full daily-life expressions where the WORDS are
+        // the symbol (icon = "text:<phrase>"), not an emoji. These give the child
+        // ready-made sentences to tap, and sit alongside the emoji cards in each
+        // category. The phrase doubles as the label.
+        {"Need", "I need help", "text:I need help"},
+        {"Need", "I want a break", "text:I want a break"},
+        {"Need", "Can I have a turn?", "text:Can I have a turn?"},
+        {"Need", "I don't want this", "text:I don't want this"},
+        {"Feel", "Leave me alone", "text:Leave me alone"},
+        {"Feel", "I need a hug", "text:I need a hug"},
+        {"Feel", "I don't feel well", "text:I don't feel well"},
+        {"Daily", "I'm not ready yet", "text:I'm not ready yet"},
+        {"Play", "Let's play together", "text:Let's play together"},
     };
 
     private final CardRepository cardRepository;
