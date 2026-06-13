@@ -12,6 +12,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -50,6 +51,10 @@ class BehaviorAggregationPostgresTest {
 
     private static final String FAMILY = "FAMPGIT";
     private Long parentId;
+    // Anchor on the current week's Monday so all three events land in ONE report
+    // week (Mon–Sun) regardless of which weekday the run happens on — avoids the
+    // week-boundary flakiness a raw now().minusDays(...) would introduce.
+    private static final LocalDate WEEK_MONDAY = LocalDate.now().with(DayOfWeek.MONDAY);
 
     @BeforeEach
     void seed() {
@@ -64,18 +69,19 @@ class BehaviorAggregationPostgresTest {
             "INSERT INTO users(email, password_hash, role, family_id) VALUES (?,?,?,?) RETURNING id",
             Long.class, uniq("child"), "x", "child", FAMILY);
 
-        // 3 events this week: Noise x2, Routine x1 — real text[] arrays via ::text[] cast.
-        insertEvent(childId, 5, "{Noise}", 0);
-        insertEvent(childId, 4, "{Noise,Routine}", 1);
-        insertEvent(childId, 3, "{Routine}", 2);
+        // Mon/Tue/Wed of this week — "Noise" on all three (a real 3-day streak),
+        // plus "Routine" once for top-trigger variety. Real text[] via ::text[] cast.
+        insertEvent(childId, 5, "{Noise}", WEEK_MONDAY);
+        insertEvent(childId, 4, "{Noise,Routine}", WEEK_MONDAY.plusDays(1));
+        insertEvent(childId, 3, "{Noise}", WEEK_MONDAY.plusDays(2));
     }
 
     @Test
     void weeklyReport_aggregatesRealPostgresArrays() {
-        WeeklyReportResponse report = analytics.generateWeeklyReportData(FAMILY, LocalDate.now());
+        WeeklyReportResponse report = analytics.generateWeeklyReportData(FAMILY, WEEK_MONDAY);
 
         assertEquals("success", report.getStatus());
-        // Noise appears in 2 rows, Routine in 2 rows (one shared) → both surface; Noise ranks top.
+        // Noise logged 3x, Routine 1x → Noise is the top trigger.
         assertTrue(report.getTop3Triggers().contains("Noise"));
         assertEquals(7, report.getChartData().size(), "a week of daily emotion points");
     }
@@ -83,16 +89,16 @@ class BehaviorAggregationPostgresTest {
     @Test
     void consecutiveTriggerAlert_detectsThreeDayStreakOnRealArrays() {
         List<String> alerts = analytics.checkConsecutiveTriggerAlert(FAMILY, 3);
-        // Noise / Routine were logged on 3 consecutive days (offsets 0,1,2).
-        assertTrue(alerts.contains("Routine") || alerts.contains("Noise"));
+        // "Noise" appears on Mon, Tue, Wed → a 3-consecutive-day streak fires an alert.
+        assertTrue(alerts.contains("Noise"), "expected a Noise streak alert, got " + alerts);
     }
 
-    private void insertEvent(Long childId, int intensity, String tagsLiteral, int daysAgo) {
+    private void insertEvent(Long childId, int intensity, String tagsLiteral, LocalDate day) {
         jdbc.update("""
             INSERT INTO behavior_event(parent_id, child_id, intensity, trigger_tags, occurred_at)
             VALUES (?, ?, ?, ?::text[], ?)
             """, parentId, childId, intensity, tagsLiteral,
-            java.sql.Timestamp.valueOf(LocalDate.now().minusDays(daysAgo).atTime(12, 0)));
+            java.sql.Timestamp.valueOf(day.atTime(12, 0)));
     }
 
     private static String uniq(String role) {
