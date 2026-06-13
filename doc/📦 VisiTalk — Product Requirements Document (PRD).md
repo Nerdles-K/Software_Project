@@ -2,11 +2,11 @@
 
 | 项目                    | VisiTalk — 自闭症儿童可视化沟通与情绪追踪平台                |
 | --------------------- | ------------------------------------------------------------ |
-| 文档版本              | v1.7                                                         |
-| 状态                  | Sprint 2 收尾（Epic A/B/C 功能侧全部完成，测试与演示物料进行中）  |
+| 文档版本              | v1.8                                                         |
+| 状态                  | Sprint 2 收尾（Epic A/B/C 全部完成；已生产部署 + 自动化测试/CI 上线，演示物料进行中）  |
 | 文档负责人 (PO)       | Xu Ziyang                                                    |
 | 团队                  | Xu Ziyang, Xu Zihe, Yuen KinNing, Ke Hongyi                  |
-| 最后更新              | 2026-06-04                                                   |
+| 最后更新              | 2026-06-13                                                   |
 | 相关资料              | `2026-03-17-Orange-ElevatorPitch-ImpactMapping-Personas-InterviewReports-V1.0.pdf` |
 | 开发框架              | Scrum (2-week Sprint) + Story Mapping + Continuous Delivery  |
 
@@ -172,7 +172,7 @@ WeeklyReport (id, child_id, week_start, metrics_json, pdf_url)
 DiaryEntry (id, child_id, emotion_card_id, doodle_url, created_at)
 ```
 
-> 数据权限关键约束：`role = child` 的会话**只能**读到本 `family_id` 下的 PECS / Schedule / DiaryEntry 数据，**永远不能**读到 `BehaviorEvent`。`role = parent` 的会话对 `DiaryEntry` 只能读取聚合字段（当日是否存在记录），**不可读取** `emotion_card_id` 与 `doodle_url` 明细。在 Supabase Row Level Security (RLS) 中以策略形式强制。
+> 数据权限关键约束：`role = child` 的会话**只能**读到本 `family_id` 下的 PECS / Schedule / DiaryEntry 数据，**永远不能**读到 `BehaviorEvent`。`role = parent` 的会话对 `DiaryEntry` 只能读取聚合字段（当日是否存在记录），**不可读取** `emotion_card_id` 与 `doodle_url` 明细。在**应用层**（JwtFilter 注入 `family_id` + 角色，controller 归属校验）强制，并由 PrivacyIsolation/JwtFilter E2E（13 条）+ 线上 `/verify` 验证（迁到 Neon 后不再依赖 Supabase RLS）。
 
 ---
 
@@ -182,10 +182,10 @@ DiaryEntry (id, child_id, emotion_card_id, doodle_url, created_at)
 | ---- | --------------------------------------------- | ---------------------------------- |
 | 前端   | Vue 3 + Vite + Pinia + Tailwind                | 拖拽用 `vue-draggable-plus`           |
 | 后端   | Spring Boot 3 (Java 17)                       | REST + JWT；按模块分包 `pecs/schedule/behavior` |
-| 数据库  | Supabase (PostgreSQL 15) + Row Level Security | 直接复用 Supabase Auth                 |
-| 文件   | Supabase Storage                              | 图卡/导出 PDF                          |
-| CI/CD | GitHub Actions → Vercel (前端) / Fly.io (后端)    | 每次合并 main 自动部署到 staging            |
-| 测试   | Vitest + Playwright (E2E) + JUnit 5 (后端)      | 儿童交互专用易用性测试脚本                      |
+| 数据库  | PostgreSQL — 本地 17 (dev) / Neon (prod)        | 隔离在应用层（JWT + 角色 + family 校验），不依赖 Supabase RLS |
+| 文件   | 本地 `backend/uploads/`（生产可接对象存储）              | 图卡/导出 PDF；Render 临时磁盘重启即丢，长期接 Cloudinary 等 |
+| CI/CD | GitHub Actions → Vercel (前端) / Render (后端 Docker) | 6 Job 全绿后合入 main；push main 平台侧自动部署    |
+| 测试   | Vitest + Playwright (E2E) + JUnit 5 + Testcontainers (后端) | 后端 43 + 前端 16 单元 + 2 E2E；详见《Test Report v2.2》 |
 
 ---
 
@@ -224,7 +224,7 @@ DiaryEntry (id, child_id, emotion_card_id, doodle_url, created_at)
 | **Product Owner (PO)** | Xu Ziyang    | 维护 Product Backlog 优先级；本 PRD 的最终决策人；与家长用户保持联络。            |
 | **Scrum Master (SM)**  | Ke Hongyi    | 主持 Scrum 仪式；移除阻塞；维护 Burndown 与 Velocity；保障流程纪律。            |
 | **Dev Team — 前端 / UX** | Yuen KinNing | 儿童端 PECS / Schedule 交互、UI 资产、可用性测试脚本。                      |
-| **Dev Team — 后端 / 数据** | Xu Zihe      | Spring Boot API、Supabase RLS、Behavior 分析与周报算法。             |
+| **Dev Team — 后端 / 数据** | Xu Zihe      | Spring Boot API、应用层权限隔离、Behavior 分析与周报算法。             |
 | **Dev Team — 全栈 / 架构** | Xu Ziyang    | (PO 兼任) 端到端联调、CI/CD、数据库 schema、跨模块技术决策。                    |
 
 > 由于团队仅 4 人，PO 兼一名 Developer；SM 同时承担 QA 主导。所有人在 Sprint 期内均承担测试责任。
@@ -285,7 +285,7 @@ DiaryEntry (id, child_id, emotion_card_id, doodle_url, created_at)
 | R1  | 难以招募到自闭症家庭做真实用户测试         | 高  | 高  | Sprint 0 即联系本地特教机构；备用方案：邀请儿童康复师做代理评估。     |
 | R2  | 儿童端误触导致负向情绪 (项目愿景反向)        | 中  | 高  | 设"破坏性操作需 PIN"原则；做易用性专项测试，每 Sprint 至少 1 次。 |
 | R3  | 4 人团队 Velocity 被高估              | 高  | 中  | 第 2 个 Sprint 起以实际 Velocity 重排 Backlog。   |
-| R4  | Supabase RLS 配置错误导致数据越权        | 低  | 极高 | 强制 RLS 单元测试；上线前安全自查 checklist。           |
+| R4  | 权限校验配置错误导致数据越权（应用层隔离，Neon 无 RLS） | 低  | 极高 | ✅ 已落地：PrivacyIsolation/JwtFilter E2E（13 条）+ 修复 2 处越权缺口 + 线上 `/verify` PASS。 |
 | R5  | PO 兼 Dev 导致优先级与实现冲突            | 中  | 中  | Sprint Review 邀请外部 mentor 旁听，制衡决策。       |
 
 ### 10.9 度量 (Metrics)
@@ -346,3 +346,4 @@ DiaryEntry (id, child_id, emotion_card_id, doodle_url, created_at)
 | v1.6.1 | 2026-06-04 | Xu Ziyang  | Epic B (B-1..B-4) 全部完成；至此 Epic A / B / C 均交付，R1+R2 范围 100% 达成 |
 | v1.6.2 | 2026-06-04 | Xu Ziyang  | 跨文档校对：与 Progress v1.7 / Workflow v1.4 / Architecture v1.5 / Work Packages v1.4 同步对齐；本周期 Won't 列表确认为空 |
 | v1.7   | 2026-06-04 | Xu Ziyang  | A-2 升级：词卡库 16→53、新增 People/Action/Time 分类；sentence 表演化为双向家庭对话（family_id + sender_role）；新增 child / parent 两端 Chat 视图与 ChatComposer 公共组件 |
+| v1.8   | 2026-06-13 | Xu Ziyang  | §8 技术栈与平台同步实际：Supabase→Neon、Fly.io→Render、文件存储改本地 `uploads/`(+未来对象存储)、测试栈补 Testcontainers；§7 隐私约束改为"应用层隔离 + E2E/`/verify` 验证"（非 Supabase RLS）；R4 风险标记已缓解；团队职责"Supabase RLS"改"应用层权限隔离"。配套《Test Report v2.2》《Architecture v1.7》 |

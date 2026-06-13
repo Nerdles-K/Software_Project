@@ -2,9 +2,9 @@
 
 | 项目        | VisiTalk — 自闭症儿童可视化沟通与情绪追踪平台 |
 | --------- | ----------------------------- |
-| 文档版本      | v1.9                          |
+| 文档版本      | v2.0                          |
 | 文档负责人     | Ke Hongyi (Scrum Master)      |
-| 最后更新      | 2026-06-10                    |
+| 最后更新      | 2026-06-13                    |
 | 关联文档      | PRD、项目架构文档、Workflow 文档        |
 | 项目跟踪工具    | Jira Scrum 项目 (Board: VisiTalk SCRUM) |
 
@@ -31,7 +31,8 @@
 | R1 — MVP 完成          | 2026-06-09     | 🟢 完成（提前 5 天） |
 | **Deliverable 3 提交** | **2026-06-07** | 🟢 完成（D3 V3.0 已出，6/10） |
 | **生产部署上线 (Vercel + Render + Neon)** | **2026-06-10** | 🟢 完成（线上可用 + 浏览器端到端冒烟通过） |
-| R2 — 增强 + 收尾 完成      | 2026-06-15     | 🟢 功能侧 + 部署完成；待自动化测试覆盖 |
+| **自动化测试 + CI 上线** | **2026-06-13** | 🟢 完成（后端 43 + 前端 16 单元 + 2 E2E；CI 6 Job 全绿；P0-P3 + 修复 2 处越权 + 线上 `/verify` PASS） |
+| R2 — 增强 + 收尾 完成      | 2026-06-15     | 🟢 功能侧 + 部署 + 自动化测试 全部完成 |
 | **项目展示 (Presentation)** | **2026-06-15** | 🟡 演示稿 V1.0 已起草 |
 
 ---
@@ -70,14 +71,16 @@
 | Epic A — A-1 / A-2 / A-4 / A-5(追加)       | Xu Ziyang / Yuen KinNing | 🟢 完成 |
 | Epic B — B-1 / B-2 / B-3 / B-4           | Xu Ziyang / Yuen KinNing | 🟢 完成 |
 | Epic C — C-1..C-7 (含原 Won't 的 C-3/4/5)    | Xu Ziyang / Xu Zihe      | 🟢 完成 |
-| Vitest 单元测试（DoD 要求）                       | Yuen KinNing | ⬜ 待开始 |
-| Playwright E2E（A-2 拖拽 / B-3 打勾 / C-1 记录） | Ke Hongyi    | ⬜ 待开始（仓库内尚无用例；线上冒烟已手测） |
+| Vitest 单元测试（DoD 要求）                       | Yuen KinNing | 🟢 完成（16 条：cards/client/auth store + 工具函数） |
+| 后端测试（JUnit 单元 + E2E + Testcontainers）      | Xu Ziyang / Xu Zihe | 🟢 完成（43 条；P0 权限隔离 10 + P1 端点/JwtFilter 9 + 真 Postgres 聚合 2） |
+| Playwright E2E（auth-guard）                  | Ke Hongyi    | 🟢 完成（auth-guard 2 条 CI 实跑；按 Story 主路径用例待补） |
+| CI 接入 + 修复（vitest / DATABASE_* / 平台名）       | Xu Ziyang    | 🟢 完成（6 Job 全绿，run 27471191370） |
 | **生产部署 (Vercel + Render + Neon) + Deployment Manual** | Xu Ziyang | 🟢 完成（6/10） |
 | Jira Story 录入 Backlog                    | Ke Hongyi    | 🟡 进行中 |
 | Deliverable 3 演示视频 + 截图                  | Xu Ziyang    | 🟡 物料 V3.0 已出 |
 | Teams 频道发送技术栈 + Jira 链接                  | Xu Ziyang    | 🟡 待确认 |
 
-> 6/4 一日内拿下 Epic B 全部 + Epic C 全部（含 PO 决策追加的 5 条原 Won't）。本地 PostgreSQL 17 + Spring Boot + Vite 三件套全跑通。**6/10 生产环境已部署上线**（Vercel + Render + Neon，详见 §3 部署说明与《Deployment Manual V1.0》）。剩余压力集中在**自动化测试覆盖**（Vitest + Playwright，DoD 卡点）与演示物料定稿。
+> 6/4 一日内拿下 Epic B 全部 + Epic C 全部（含 PO 决策追加的 5 条原 Won't）。本地 PostgreSQL 17 + Spring Boot + Vite 三件套全跑通。**6/10 生产环境已部署上线**（Vercel + Render + Neon，详见 §3 部署说明与《Deployment Manual V1.0》）。**6/13 自动化测试 + CI 全部落地**（后端 43 + 前端 16 单元 + 2 E2E，CI 6 Job 全绿，详见《Test Report v2.2》）——DoD 测试卡点已满足。剩余仅演示物料定稿与 6/15 现场彩排。
 
 ### Epic A 完成增量 (6/2–6/3)
 - A-1 主界面：4 分类网格、卡片 120×120px、对比度 ≥ 4.5:1。
@@ -163,7 +166,7 @@
 | --- | ------------------------ | -- | -- | -------------------------- |
 | R1  | 难以招募自闭症家庭做真实测试           | 高  | 高  | Sprint 0 内联系本地特教机构         |
 | R3  | 4 人团队 Velocity 被高估       | 高  | 中  | Sprint 2 起以实际 Velocity 重排  |
-| R4  | Supabase RLS 配置错误导致越权    | 低  | 极高 | 强制 RLS 单元测试 + 上线前安全自查      |
+| R4  | 权限/RLS 配置错误导致越权（Neon）    | 低  | 极高 | ✅ 已落地：PrivacyIsolation/JwtFilter E2E（13 条）+ 修复 2 处越权缺口 + 线上 `/verify` PASS |
 
 ---
 
@@ -179,12 +182,15 @@
 - [x] **Deliverable 3 物料** ✅：D3 V3.0 PDF 已出（6/10）
 - [ ] 在 Jira 中补全全部 13 条 Story (A/B/C 模块) 并挂到对应 Epic
 - [ ] 把前端 / 后端技术栈 + Jira 看板链接发到 Teams 私有频道 (老师要求)
-- [ ] **写 Vitest 单元测试**（DoD 卡点，当前 0 个）：Pinia store 逻辑 + 关键组件渲染；需先把 `vitest` 加入 `frontend/package.json`
-- [ ] **写 Playwright E2E**（DoD 卡点，仓库内尚无用例）：A-2 拖拽拼句 / B-3 打勾庆祝 / C-1 行为记录 3 端到端（落地为可入 CI 的用例，而非一次性脚本）
-- [ ] **修 CI**：`ci.yml` 的 `frontend-test` 跑 `vitest run` 但无测试会失败；`backend-test` 仍引用已废弃的 `SUPABASE_DB_*` 环境变量名（应改 `DATABASE_*`）；CI deploy 段仍写 Fly.io，待对齐 Render
-- [ ] 同步架构/Workflow 文档中的 Supabase → Neon、Fly.io → Render
-- [ ] （可选）上传图片持久化：Render 临时磁盘重启即丢，接 Supabase Storage / Cloudinary
-- [ ] **6/15 项目展示**：演示稿 V1.0 定稿 + 现场演示流程彩排 — 剩余 **5 天**
+- [x] **写 Vitest 单元测试**（DoD 卡点）✅：cards / client / auth store + 工具函数共 16 条，`vitest`+`jsdom`+`@vue/test-utils` 已入 `frontend/package.json`
+- [x] **写后端 JUnit + E2E + Testcontainers**（DoD 卡点）✅：43 条；P0 权限隔离 10 + P1 端点/JwtFilter 9 + 真 Postgres 聚合 2；期间发现并修复 `CardController`/`Schedule.toggleStep` 两处越权缺口
+- [x] **写 Playwright E2E** ✅：`auth-guard.spec.ts` 2 条（落地页 + 路由守卫重定向），已入 CI Chromium 实跑；按 Story 主路径用例（A-2/B-3/C-1…）spec 内留 TODO 待补
+- [x] **修 + 接 CI** ✅：`ci.yml` 6 Job（前端 lint/test/build/e2e + 后端 test/build）全绿；`backend-test` 起 `postgres:15` service 并让 Testcontainers 真跑；环境变量与平台名已对齐
+- [x] **线上权限抽查** ✅：对 Render 部署跑 `/verify`，跨家庭/角色权限断言 PASS
+- [ ] 同步**架构 / PRD** 文档中残留的 Supabase → Neon、Fly.io → Render 字样（本轮已同步 Workflow §7）
+- [ ] 按 Story 扩 Playwright 主路径用例：A-2 拖拽拼句 / B-3 打勾庆祝 / C-1 行为记录；为关键元素加 `data-testid`
+- [ ] （可选）上传图片持久化：Render 临时磁盘重启即丢，接对象存储 / Cloudinary
+- [ ] **6/15 项目展示**：演示稿 V1.0 定稿 + 现场演示流程彩排 — 剩余 **2 天**
 
 ---
 
@@ -205,3 +211,4 @@
 | v1.7 | 2026-06-04 | Ke Hongyi | 大刷新：里程碑 R1 🟢、R2 🟢（功能侧）；§4 Current Sprint 改为 Sprint 2 收尾视角；估点统计去除"待做"列；Velocity 表回填 Sprint 1=39 / Sprint 2=52；Action Items 切到测试 + Deliverable + 演示，移除已完成的功能开发条目 |
 | v1.8 | 2026-06-04 | Ke Hongyi | **A-2 升级为双向 PECS 对话**：词卡库 16→53（新增 People/Action/Time 三分类）；sentence 表去 child_id 改 family_id + sender_role；新增 `/child/chat` + `/parent/chat` 共用 ChatComposer 组件 + MessageBubble；polling 3 s；child 端首页加 💬 入口，ParentNav 加 Chat tab。端到端实测：child→parent→child 来回各 200 + 增量 polling 正确 |
 | v1.9 | 2026-06-10 | Xu Ziyang | **生产部署上线**：前端 Vercel + 后端 Render(Docker) + 数据库 Neon(PG17)；后端配置外置为环境变量、根目录 Dockerfile、CORS `allowedOriginPatterns` 放行 `*.vercel.app`；Playwright 真机冒烟注册/登录通过；产出《Deployment Manual V1.0》。**计划偏差**：Supabase→Neon（免费额度满）、Fly.io→Render（免绑卡）。里程碑加"生产部署上线 🟢"、D3 转 🟢、演示稿转 🟡；Action Items 勾掉部署/D3，新增「修 CI（vitest/SUPABASE_DB_*/Fly.io 过时）」「同步架构&Workflow 文档平台名」「图片持久化(可选)」；6/15 演示倒计时刷新为 5 天 |
+| v2.0 | 2026-06-13 | Xu Ziyang, Ke Hongyi | **自动化测试 + CI 全部落地**（DoD 测试卡点满足）：后端 43 条（P0 权限隔离 10 + P1 端点/JwtFilter 9 + JUnit 单元 + 真 Postgres 聚合 2）、前端 16 单元 + 2 Playwright E2E；`.github/workflows/ci.yml` 6 Job 全绿（run 27471191370），`backend-test` 起 postgres:15 service 让 Testcontainers 真跑；期间发现并修复 `CardController`/`Schedule.toggleStep` 两处越权缺口；对线上部署 `/verify` 权限抽查 PASS。里程碑新增"自动化测试 + CI 上线 🟢"、R2 转全绿；§4 快照测试行转 🟢；R4 风险标记已缓解；Action Items 勾掉测试/CI 各项，演示倒计时 2 天。详见《Test Report v2.2》《Workflow v1.5》 |

@@ -2,11 +2,11 @@
 
 | 项目        | VisiTalk — 自闭症儿童可视化沟通与情绪追踪平台 |
 | --------- | ----------------------------- |
-| 文档版本      | v2.1                          |
+| 文档版本      | v2.2                          |
 | 文档负责人     | Xu Ziyang (PO / 全栈) · Ke Hongyi (SM / QA) |
 | 最后更新      | 2026-06-13                    |
 | 关联文档      | `VisiTalk — Workflow 文档 (开发与测试).md`、项目架构文档、PRD |
-| 范围        | 后端（单元 + 端到端 + Testcontainers）+ 前端（Vitest + Playwright 脚手架） |
+| 范围        | 后端（单元 + 端到端 + Testcontainers）+ 前端（Vitest + Playwright）+ GitHub Actions CI |
 
 ---
 
@@ -15,7 +15,7 @@
 本文档说明 VisiTalk 的**自动化测试**做了什么、用了哪些工具与框架、为什么这样选，并如实标注每一层的**运行/验证状态**（已验证通过 / 需外部依赖未在本环境运行）。
 对应 Workflow 文档第二部分「测试金字塔」的全部五层，是 DoD（单元覆盖关键分支、权限隔离、核心流程自动化）的落地证据。
 
-> 一句话：**后端 41 条用例本地全绿（另 2 条真实 Postgres 用例在有 Docker 时运行）；前端 16 条 Vitest 全绿；Playwright 已搭好脚手架待本地运行。**
+> 一句话：**全套测试已接入 GitHub Actions CI，main 分支最近一次 6 个 Job 全绿——后端 43 条（含 2 条真实 Postgres，CI 上 Docker 实跑）、前端 16 条 Vitest + 2 条 Playwright（Chromium 实跑）全部通过；并已对线上部署做 `/verify` 权限抽查通过。**
 
 ---
 
@@ -25,11 +25,12 @@
 |------|------|------|------|
 | 后端单元（业务逻辑） | JUnit 5 + Mockito | AuthService 10 · JwtUtil 3 · BehaviorAnalytics 4 | ✅ 17 通过 |
 | 后端端到端（HTTP 全链路） | Spring Boot Test + TestRestTemplate + H2 | AuthFlow 5 · **Privacy 10** · Api 6 · JwtFilter 3 | ✅ 24 通过 |
-| 后端真实库（Postgres 专有） | **Testcontainers(Postgres)** | BehaviorAggregation 2 | ⏭️ 需 Docker（无 Docker 自动跳过） |
+| 后端真实库（Postgres 专有） | **Testcontainers(Postgres)** | BehaviorAggregation 2 | ✅ 在 CI 真 Postgres 实跑通过（本地无 Docker 时自动跳过） |
 | 前端单元 | **Vitest** + jsdom | cards 6 · client 4 · auth 6 | ✅ 16 通过 |
 | 前端 E2E（浏览器级） | **Playwright** + Chromium | auth-guard 2 | ✅ 2 通过（Chromium 无头实跑） |
+| 持续集成（CI） | **GitHub Actions** | 6 个 Job | ✅ main 最近一次全绿（见 §9） |
 
-**后端 41 条通过 + 2 条 Docker 守卫；前端 16 单元 + 2 E2E 通过。**
+**后端 43 条全通过（CI 上含 2 条真实 Postgres）；前端 16 单元 + 2 E2E 通过；CI 6 Job 全绿。**
 
 ---
 
@@ -46,6 +47,7 @@
 | **Vitest + jsdom** | 前端单元测试 | 与 Vite 同构、零额外配置、原生 TS/ESM；CLAUDE.md 已指定 `npx vitest run` |
 | **@vue/test-utils** | （预留）Vue 组件测试 | 配合 Vitest 测组件渲染 |
 | **Playwright** | 浏览器级 E2E | Workflow §9.3 指定；跨浏览器、自动等待、可录 trace |
+| **GitHub Actions** | 持续集成（CI） | 仓库自带、零成本；每次 push / PR 自动跑全套测试做质量门；其 ubuntu runner 自带 Docker，正好让 Testcontainers 这一层真正跑起来 |
 
 ### 为什么分这么多层
 - **单元**：快、定位准，测每个分支。
@@ -115,7 +117,8 @@
 
 - 用 Testcontainers 起真实 `postgres:16-alpine`，应用生产 `schema.sql`，再用真实数组列驱动 `BehaviorAnalyticsService`。
 - 验证：周报对真实 `unnest` 数组聚合（Top 触发因素、7 天图表点）；连续触发预警在真实数据上检测 3 天连击。
-- **守卫**：`@Testcontainers(disabledWithoutDocker = true)` —— 无 Docker 自动跳过（本环境 `NO_DOCKER`，2 条已跳过，套件仍绿）；有 Docker 的 CI / 本地会真正运行。
+- **守卫**：`@Testcontainers(disabledWithoutDocker = true)` —— 无 Docker 自动跳过（本机无 Docker 时这 2 条跳过、套件仍绿）。
+- **已在 CI 真跑通过**：GitHub Actions 的 ubuntu runner 自带 Docker，`backend-test` Job 跑 `./gradlew test` 时这 2 条不再被跳过、用真实 Postgres 容器执行并通过——这一层从「待 Docker 验证」转为「已验证」。
 
 ---
 
@@ -133,7 +136,28 @@
 
 ---
 
-## 9. 如何运行 (How to Run)
+## 9. 持续集成 CI (GitHub Actions)
+
+> 文件：`.github/workflows/ci.yml`。**触发**：push 到 `main` / `feat/**` / `fix/**` / `chore/**`，向 `main` 提 PR，以及手动 `workflow_dispatch`。
+
+**6 个 Job（含依赖关系）**：
+
+| Job | 做什么 | 备注 |
+|-----|--------|------|
+| `frontend-lint` | `vue-tsc --noEmit` 类型检查 | 其余前端 Job 的前置 |
+| `frontend-test` | `vitest run`（16 条单元） | 需 lint 通过 |
+| `frontend-build` | `npm run build` 产物可构建 | 需 test 通过 |
+| `frontend-e2e` | `playwright install chromium` + `npm run test:e2e`（2 条） | 自动起 `npm run dev`；失败上传 `playwright-report` |
+| `backend-test` | `./gradlew test`（43 条） | 起 `postgres:15` service；runner 自带 Docker，**Testcontainers 的 2 条真 Postgres 用例在此实跑** |
+| `backend-build` | `./gradlew build -x test` 可打包 | 需 backend-test 通过 |
+
+**最近一次 main 运行**：[run 27471191370](https://github.com/Nerdles-K/Software_Project/actions/runs/27471191370) — `conclusion: success`，6 个 Job 全部 ✅。
+
+**线上抽查（`/verify`）**：对已部署的后端（Render）跑了一轮权限断言（跨家庭读/写隔离、角色边界），结果 PASS——证明加固后的权限逻辑在生产环境同样成立。
+
+---
+
+## 10. 如何运行 (How to Run)
 
 ```bash
 # 后端
@@ -152,12 +176,14 @@ npm run test:e2e
 
 ---
 
-## 10. 测试结果 (Results)
+## 11. 测试结果 (Results)
 
 ```
-后端：BUILD SUCCESSFUL — 41 passed, 2 skipped (Docker-gated), 0 failed
+后端（本地，无 Docker）：BUILD SUCCESSFUL — 41 passed, 2 skipped (Docker-gated), 0 failed
+后端（CI，有 Docker）   ：BUILD SUCCESSFUL — 43 passed, 0 skipped, 0 failed
 前端单元：Test Files 3 passed (3) · Tests 16 passed (16)
 前端 E2E：2 passed (Playwright + Chromium, headless)
+CI：6/6 Job success（run 27471191370）
 ```
 
 | 测试类 | 结果 |
@@ -169,34 +195,36 @@ npm run test:e2e
 | PrivacyIsolationE2ETest | 10 ✅ |
 | ApiEndpointE2ETest | 6 ✅ |
 | JwtFilterE2ETest | 3 ✅ |
-| BehaviorAggregationPostgresTest | 2 ⏭️（本环境无 Docker，已跳过） |
+| BehaviorAggregationPostgresTest | 2 ✅（CI 上真 Postgres 实跑；本地无 Docker 时跳过） |
 | 前端 cards / client / auth（Vitest） | 16 ✅ |
 | 前端 auth-guard（Playwright） | 2 ✅ |
 
 ---
 
-## 11. 已知约束 (Trade-offs)
+## 12. 已知约束 (Trade-offs)
 
 1. **H2 vs 真实 Postgres**：端到端默认用 H2（无需 Docker 一键跑）；`behavior_event` / `schedule` / `sentence` 的数组 SQL happy-path 由 Testcontainers（P3）覆盖，其 403/404 拒绝路径在 H2 上已覆盖（校验先于数组 SQL）。
-2. **Playwright 已实跑**：装 Chromium 后无头运行 2/2 通过；后端相关流程需另起 `bootRun` 后扩展。
-3. **本沙箱无 Docker**（无 CLI / 无守护进程 / 无 Docker.app / 无 colima）：P3 的 2 条真实 Postgres 用例本环境**无法运行**，已由 `disabledWithoutDocker` 守卫跳过，需在有 Docker 的机器 / CI 验证。
+2. **Playwright 已实跑**：装 Chromium 后无头运行 2/2 通过；后端相关流程需另起 `bootRun` 后扩展（spec 内已留 TODO）。
+3. **本地无 Docker 时 P3 跳过**：开发机若无 Docker，2 条真实 Postgres 用例自动跳过——但 **CI 上 Docker 可用，已真跑通过**，质量门有效；这只是本地体验差异，不影响门禁。
 
 ---
 
-## 12. 后续待办 (Next Steps)
+## 13. 后续待办 (Next Steps)
 
-- [ ] 在有 Docker 的 CI 上启用 P3（去掉/确认 `disabledWithoutDocker` 行为，作为质量门）。
+- [x] 把后端 `./gradlew test` + 前端 `npm run test` 接入 `.github/workflows/ci.yml`，push/PR 强制跑（6 Job 全绿）。
+- [x] 在有 Docker 的 CI 上让 P3 真跑（`backend-test` runner 自带 Docker，2 条真 Postgres 用例已实跑通过）。
+- [x] 对线上部署做权限抽查（`/verify` PASS）。
 - [ ] 按 Story 扩展 Playwright：拖拽拼句、日程执行、行为记录、日记隐私（§6.2 TODO）；为关键元素加 `data-testid`。
 - [ ] 前端组件级测试（@vue/test-utils）覆盖 child 端关键交互。
-- [ ] 把后端 `./gradlew test` + 前端 `npm run test` 接入 `.github/workflows/ci.yml`，PR 卡点强制跑。
 - [ ] 人工回归确认 §8 的 CardController/Schedule 加固对前端无影响。
 
 ---
 
-## 13. 变更记录 (Changelog)
+## 14. 变更记录 (Changelog)
 
 | 版本 | 日期 | 作者 | 变更 |
 |------|------|------|------|
+| v2.2 | 2026-06-13 | Xu Ziyang, Ke Hongyi | 全套测试接入 GitHub Actions CI（6 Job），main 最近一次全绿；P3 Testcontainers 在 CI 真 Postgres 实跑通过（43 passed / 0 skipped）；对线上部署 `/verify` 权限抽查 PASS；新增 §9 CI 章节并相应重排小节号 |
 | v2.1 | 2026-06-13 | Xu Ziyang, Ke Hongyi | 实跑验证 Playwright（装 Chromium，2/2 通过）；确认本沙箱无 Docker，P3 仍只能跳过 |
 | v2.0 | 2026-06-13 | Xu Ziyang, Ke Hongyi | P0 隐私/权限隔离（10 条）+ P1 控制器/JwtFilter（9 条）+ P2 前端 Vitest（16 条）+ Playwright 脚手架 + P3 Testcontainers（2 条，Docker 守卫）；修复 CardController / Schedule.toggleStep 两处安全缺口 |
 | v1.0 | 2026-06-13 | Xu Ziyang, Ke Hongyi | 首版：后端 AuthService/JwtUtil 单元 + AuthFlow 端到端，修复原失效的 BehaviorAnalyticsServiceTest，引入 H2 测试环境 |

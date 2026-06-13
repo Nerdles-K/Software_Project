@@ -32,6 +32,7 @@ dependencies {
     testRuntimeOnly 'com.h2database:h2'
     // Real Postgres in a container for the behavior_event aggregation tests (text[]
     // + unnest), which H2 can't run. Auto-skipped when Docker is unavailable.
+    // (Used by BehaviorAggregationPostgresTest.)
     testImplementation 'org.testcontainers:junit-jupiter:1.20.4'
     testImplementation 'org.testcontainers:postgresql:1.20.4'
 }

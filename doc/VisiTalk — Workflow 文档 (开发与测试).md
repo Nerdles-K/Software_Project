@@ -2,9 +2,9 @@
 
 | 项目        | VisiTalk — 自闭症儿童可视化沟通与情绪追踪平台 |
 | --------- | ----------------------------- |
-| 文档版本      | v1.4                          |
+| 文档版本      | v1.5                          |
 | 文档负责人     | Ke Hongyi (SM/QA) · Xu Ziyang (架构) |
-| 最后更新      | 2026-06-04                    |
+| 最后更新      | 2026-06-13                    |
 | 关联文档      | PRD、项目架构文档、项目进度文档            |
 
 ---
@@ -104,18 +104,21 @@ bash start.sh
 
 ## 7. CI/CD 流水线 (GitHub Actions)
 
-每次 PR 与每次合并 `main` 触发：
+push 到 `main` / `feat/**` / `fix/**` / `chore/**`、向 `main` 提 PR、以及手动 `workflow_dispatch` 均触发。**6 个 Job 已落地并全绿**（详见《Test Report》§9）：
 
 ```
-lint  ──►  unit test  ──►  build  ──►  e2e test  ──►  deploy staging
-(前端 ESLint /          (Vitest /                      (Vercel /
- 后端 Checkstyle)        JUnit 5)        (Playwright)    Fly.io)
+frontend-lint ─► frontend-test ─┬─► frontend-build
+ (vue-tsc)        (vitest run)   └─► frontend-e2e (playwright + chromium)
+
+backend-test ─► backend-build
+ (gradlew test，起 postgres:15 service；runner 自带 Docker，
+  Testcontainers 真 Postgres 用例在此实跑)
 ```
 
-- 任一步失败则流水线中断，PR 不可合并。
-- 合并 `main` 后自动部署到 staging；Release 末手动晋级到 prod。
-- 每个 Sprint 末打 tag `vR{n}-sprint{m}`。
-- CI 配置文件：`.github/workflows/ci.yml`；前端 lint/单元测试使用 Vitest，后端使用 JUnit 5 + PostgreSQL。
+- 任一 Job 失败则 PR 不可合并（`main` 受保护）。
+- 最近一次 main 运行 6/6 success（run 27471191370）。
+- 部署走平台侧自动化：前端 **Vercel**、后端 **Render**（push `main` 自动部署），数据库 **Neon**（PostgreSQL）。> 注：早期文档写的 Fly.io / Supabase 已分别换为 Render / Neon。
+- CI 配置文件：`.github/workflows/ci.yml`。前端 lint=`vue-tsc --noEmit`、单元=Vitest、E2E=Playwright；后端=JUnit 5 + 真实/容器化 PostgreSQL。
 
 ---
 
@@ -143,11 +146,12 @@ lint  ──►  unit test  ──►  build  ──►  e2e test  ──►  de
 - 必须验证：`child` 角色 JWT 调 `PUT /api/family-settings/diary-enabled` → 403。
 - 必须验证：`child` 角色 JWT 调 `POST /api/schedules/templates` → 403（child 不能改日程）。
 - 必须验证：跨 `family_id` 访问任意资源被拒绝（JwtFilter 把 family 从 token 注入 request attribute，controller 不接受 query 中的 familyId 覆盖）。
-- 上述项每条已在 Epic A/B/C 开发期通过 curl 实测验证，但 Playwright + JUnit 自动化用例仍是 DoD 卡点。
+- 上述项每条已在 Epic A/B/C 开发期通过 curl 实测验证；**自动化层已补齐**——`PrivacyIsolationE2ETest`（10 条）+ `JwtFilterE2ETest`（3 条）在 CI 上以真实 HTTP 覆盖跨家庭 / 角色 / 过期 token，DoD 卡点满足。期间还发现并修复了 `CardController` / `ScheduleController.toggleStep` 两处真实越权缺口（详见《Test Report》§8），并对线上部署做了 `/verify` 权限抽查 PASS。
 
 ### 9.3 E2E 测试
 - 每个核心 Story 至少 1 条 Playwright 用例覆盖主路径。
-- R1+R2 必备 E2E（功能侧已全部上线，待测试覆盖）：
+- **当前已落地**：`e2e/auth-guard.spec.ts`（2 条：落地页加载 + 未登录访问受保护路由被守卫重定向），CI `frontend-e2e` Job 用 Chromium 实跑通过。下列按 Story 的主路径用例仍待补（spec 内已留 TODO）。
+- R1+R2 必备 E2E（功能侧已全部上线，E2E 覆盖进行中）：
   - A-2 拖拽拼句、A-5 上传即建卡
   - B-1 builder 保存 ≤10 steps、B-3 打勾推进到庆祝
   - C-1 行为记录 3 步、C-3 周报 ≥3 阈值、C-4 分享链接 24h 过期回 410、C-6 child 写日记 / parent 只看 bool
@@ -203,3 +207,4 @@ lint  ──►  unit test  ──►  build  ──►  e2e test  ──►  de
 | v1.3 | 2026-06-03 | Ke Hongyi, Xu Ziyang | 补充本地 `backend/uploads/` 上传目录与 stale token 自救步骤；Code Review 新增"运行验证"项（编译通过 ≠ 功能可用） |
 | v1.3.1 | 2026-06-04 | Ke Hongyi, Xu Ziyang | 日期刷新；无流程变更 |
 | v1.4   | 2026-06-04 | Ke Hongyi, Xu Ziyang | §9.2 权限测试列表扩到具体端点（behavior / report / alerts / diary / family-settings / schedules）；§9.3 R1+R2 必备 E2E 列表扩到 7 项覆盖 A/B/C 全部关键 AC |
+| v1.5   | 2026-06-13 | Ke Hongyi, Xu Ziyang | §7 CI/CD 改写为实际落地的 6-Job 流水线（前端 lint/test/build/e2e + 后端 test/build，含 Testcontainers 真 Postgres），平台名同步 Render/Neon/Vercel；§9.2 权限测试 DoD 卡点标记为已自动化（Privacy/JwtFilter E2E + 修复两处越权 + 线上 `/verify` PASS）；§9.3 标注 auth-guard E2E 已落地、其余按 Story 待补。详见《Test Report v2.2》 |

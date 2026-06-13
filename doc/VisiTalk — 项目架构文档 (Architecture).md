@@ -2,10 +2,10 @@
 
 | 项目        | VisiTalk — 自闭症儿童可视化沟通与情绪追踪平台 |
 | --------- | ----------------------------- |
-| 文档版本      | v1.6                          |
-| 状态        | Epic A + B + C 已完成（R1/R2 范围全部交付） |
+| 文档版本      | v1.7                          |
+| 状态        | Epic A + B + C 已完成（R1/R2 范围全部交付）；已生产部署 + 自动化测试/CI 上线 |
 | 文档负责人     | Xu Ziyang (PO / 架构)           |
-| 最后更新      | 2026-06-04                    |
+| 最后更新      | 2026-06-13                    |
 | 关联文档      | `📦 VisiTalk — Product Requirements Document (PRD).md` |
 
 ---
@@ -37,14 +37,14 @@ VisiTalk 采用**前后端分离 + BaaS 辅助**的三层架构：
                              │ HTTPS / JSON (JWT)
                              ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                后端 API — Spring Boot 3 (Fly.io)             │
+│                后端 API — Spring Boot 3 (Render)             │
 │   pecs 包  │  schedule 包  │  behavior 包  │  report 包       │
 │  鉴权过滤器 (JWT)  ·  业务校验  ·  周报生成  ·  PDF 导出       │
 └───────────────────────────┬─────────────────────────────────┘
-                             │ SQL (RLS 强制)
+                             │ SQL (应用层 family_id 校验)
                              ▼
 ┌─────────────────────────────────────────────────────────────┐
-│              PostgreSQL 17 (本地) — 持久化存储                  │
+│        PostgreSQL — 本地 17 (dev) / Neon (prod) 持久化存储       │
 │   users · pictogram_card · sentence · schedule · behavior ...  │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -64,10 +64,11 @@ VisiTalk 采用**前后端分离 + BaaS 辅助**的三层架构：
 | 数据库    | PostgreSQL 17 (本地)                        | 关系型保证数据一致性；本地零网络依赖；`schema.sql` 管理 DDL。 |
 | 认证方式   | Spring Security + JWT (自建)                 | BCrypt 密码哈希 + JJWT 签发/验证；JWT 含 userId, role, family_id。 |
 | RLS 替代  | Spring Security 角色 + family_id 应用层校验   | 课程项目周期内应用层校验替代数据库 RLS，逻辑等价。 |
-| 文件存储   | Supabase Storage                            | 与数据库同生态；存自定义图卡照片与导出的周报 PDF。                                |
-| CI/CD  | GitHub Actions                              | 与代码仓库同平台；自动跑 lint / 测试 / 部署。                               |
+| 文件存储   | 本地文件系统 `backend/uploads/`（生产可接对象存储）     | 自定义图卡照片落盘 + `WebConfig` 映射 `/uploads/**`；Render 临时磁盘重启即丢，长期可接 Cloudinary 等对象存储。 |
+| 数据库托管  | Neon (PostgreSQL)                           | 生产数据库；免费档、无需绑卡，标准 Postgres 协议，与本地 17 同源迁移零成本。                |
+| CI/CD  | GitHub Actions                              | 与代码仓库同平台；自动跑 lint / 测试；push main 触发平台侧自动部署。                |
 | 前端部署   | Vercel                                      | 静态 SPA 部署快、自带 CDN 与预览环境。                                   |
-| 后端部署   | Fly.io                                      | 容器化部署 Spring Boot，免运维，支持 staging / prod 分环境。               |
+| 后端部署   | Render (Docker)                             | 容器化部署 Spring Boot，免运维、免绑卡；push main 自动部署。               |
 | 测试     | Vitest · Playwright · JUnit 5               | 单元 / E2E / 后端单元，详见 Workflow 文档。                            |
 
 ---
@@ -83,7 +84,7 @@ VisiTalk 采用**前后端分离 + BaaS 辅助**的三层架构：
 - **前端**：`views/child/pecs/ChildPecsView.vue`（分类网格 + 句条 + HTML5 drag/drop + 点击双通道）；`views/parent/pecs/ParentPecsView.vue`（CRUD + vue-draggable-plus 排序 + 文件上传 UI）。
 - **后端**：`pecs.CardController`（GET/POST/DELETE/PUT reorder）、`pecs.SentenceController`、`pecs.UploadController`（multipart 文件落盘 + 类型/大小校验）。
 - **数据**：`PictogramCard`（`@JsonProperty("isCustom")` 强制 JSON 字段名）、`Sentence`。
-- **关键依赖**：vue-draggable-plus（家长端排序）；本地文件系统 `backend/uploads/`（A-5 上传图卡，通过 `WebConfig` 暴露为 `/uploads/**` 静态资源；生产环境可平滑切换到 Supabase Storage）。
+- **关键依赖**：vue-draggable-plus（家长端排序）；本地文件系统 `backend/uploads/`（A-5 上传图卡，通过 `WebConfig` 暴露为 `/uploads/**` 静态资源；生产环境可平滑切换到对象存储，如 Cloudinary）。
 
 ### 4.2 Module B — Visual Schedule & Timeline ✅ 已完成 (Sprint 1+2 合并, 6/4)
 - **前端**：
@@ -241,16 +242,17 @@ JwtFilter
 GitHub (main 分支)
    │  push / merge
    ▼
-GitHub Actions ── lint + unit + e2e ──┐
-   │                                  │ 全绿才部署
-   ├──► Vercel        (前端 SPA)  ──► staging.visitalk  ──► prod
-   └──► Fly.io        (后端 API)  ──► staging API       ──► prod
+GitHub Actions ── lint + unit + e2e + build (6 Job) ──┐
+   │                                                  │ 全绿才合入 main
+   ├──► Vercel        (前端 SPA)  ──► prod
+   └──► Render        (后端 API, Docker)  ──► prod
                                        │
                                        ▼
-                              Supabase (staging / prod 各一实例)
+                              Neon (PostgreSQL, prod 实例)
 ```
 
-- **环境**：`dev` (本地 PostgreSQL + Spring Boot + Vite) / `staging` (合并 main 自动部署) / `prod` (Release 末手动晋级)。
+- **环境**：`dev` (本地 PostgreSQL 17 + Spring Boot + Vite) / `prod` (push main 后 Vercel + Render 自动部署，数据库 Neon)。
+- 平台变更：早期规划的 Fly.io / Supabase 已分别换为 **Render**（免绑卡）/ **Neon**（免费额度），详见 ADR-1 / ADR-4。
 - 一键启动脚本：`bash start.sh`（自动检查 PostgreSQL、清理端口、启动前后端、打开浏览器）。
 - 每个 Sprint 末打 tag `vR{n}-sprint{m}`。
 
@@ -260,13 +262,13 @@ GitHub Actions ── lint + unit + e2e ──┐
 
 | #     | 决策                                  | 理由                                      |
 | ----- | ----------------------------------- | --------------------------------------- |
-| ADR-1 | 采用 Supabase 而非自建 PostgreSQL + 鉴权服务  | 4 人团队，RLS 与 Auth 开箱即用，把精力留给业务功能。         |
-| ADR-2 | 数据隔离放在数据库层 (RLS) 而非仅应用层             | 应用层校验易遗漏；RLS 是隐私需求 (儿童不被察觉) 的硬保证。        |
+| ADR-1 | 数据库用托管 PostgreSQL（原选 Supabase，**后改为 Neon**） | 4 人团队省运维；Supabase 免费组织额度满后迁到 Neon（标准 Postgres、免绑卡、与本地 17 同源）。鉴权未用 Supabase Auth，改自建 JWT（见 ADR-6）。 |
+| ADR-2 | 数据隔离改在应用层（JwtFilter 注入 family_id + 角色 + controller 归属校验），不依赖 Supabase RLS | 迁到 Neon 后无 Supabase RLS；隐私隔离落到 Spring Security + 应用层校验，并用 PrivacyIsolation/JwtFilter E2E（13 条）+ 线上 `/verify` 做硬保证（见《Test Report》）。 |
 | ADR-3 | 移除 TTS 语音播报功能 (原 A-3)               | 目标用户对声音敏感，语音播报与产品愿景冲突，列入 v4 候选。          |
-| ADR-4 | 前后端分别部署到 Vercel / Fly.io           | SPA 与 API 伸缩特性不同；分开部署各自取最优方案。            |
-| ADR-5 | 使用本地 PostgreSQL 替代 H2 + Supabase    | H2 每次重启丢数据不利于持续开发；Supabase 需注册配置增加复杂度。PostgreSQL 17 本地实例零网络依赖、数据持久化、与未来 Supabase 同源，迁移零成本。 |
-| ADR-6 | 自建注册 + JWT 认证替代 Supabase Auth      | Supabase Auth 绑定云服务；自建 BCrypt + JJWT 认证可本地独立运行、无外部依赖，课程演示环境更可控。 |
-| ADR-7 | A-5 自定义图卡先用本地文件系统而非 Supabase Storage | Storage SDK 接入与凭据管理成本高于 6/15 演示窗口可承担的范围；本地 `uploads/` + `WebConfig` 静态映射零依赖；接口契约（返回相对 URL）与 Supabase Storage 同构，未来切换零业务改动。 |
+| ADR-4 | 前后端分别部署到 Vercel / Render（后端原选 Fly.io，**后改为 Render**） | SPA 与 API 伸缩特性不同，分开部署各取最优；Fly.io 需绑卡，改用 Render（Docker、push main 自动部署、免绑卡）。 |
+| ADR-5 | 本地用 PostgreSQL 17 替代 H2 + 云库       | H2 每次重启丢数据不利于持续开发；本地 PostgreSQL 17 零网络依赖、数据持久化、与生产托管库（Neon）同为标准 Postgres，迁移零成本。 |
+| ADR-6 | 自建注册 + JWT 认证替代托管 Auth          | 托管 Auth（如 Supabase Auth）绑定云服务；自建 BCrypt + JJWT 认证可本地独立运行、无外部依赖，课程演示环境更可控。 |
+| ADR-7 | A-5 自定义图卡先用本地文件系统而非对象存储     | Storage SDK 接入与凭据管理成本高于 6/15 演示窗口可承担的范围；本地 `uploads/` + `WebConfig` 静态映射零依赖；接口契约（返回相对 URL）与对象存储同构，未来切换零业务改动。 |
 | ADR-8 | JwtFilter 对公开路径短路放行无效 token        | 修复实测 bug：stale token 残留 localStorage 让登录端点直接返回 401。Spring `permitAll()` 不影响过滤器链，过滤器自己必须区分公开/受保护路径。 |
 | ADR-9 | C-4 PDF 用浏览器 `window.print()` 替代服务端 PDF 库 | 课程周期内只需 1 张图 + 几行文字，引入 OpenHTMLToPDF / iText 等带样式损失风险，且会让后端膨胀。前端打印走 `@media print` 隐藏 chrome 后由浏览器生成原生 PDF（含图表、Top-3、周次），用户在打印对话框选"另存为 PDF"。零依赖、所见即所得、跨平台。 |
 | ADR-10 | C-4 分享报告冻结快照存 `payload_json` 文本字段 | 替代方案是匿名访问时实时重算聚合，但①家庭数据 24h 内可能变（新增事件影响 chart/Top3），分享链接应展示生成时刻；②匿名读到时不应再触发任何鉴权-相关查询。冻结 JSON 简单、稳定、对 DB 友好。 |
@@ -293,3 +295,4 @@ GitHub Actions ── lint + unit + e2e ──┐
 | v1.5 | 2026-06-04 | Xu Ziyang | **Epic B 全部完成**：§4.2 列出 ParentScheduleView + ChildScheduleView 落地与 6 条 schedule 端点；ADR-14（索引而非 card_id）、ADR-15（today 一次性返回 template+instance+cards）；状态改为 "A/B/C 全部完成" |
 | v1.5.1 | 2026-06-04 | Xu Ziyang | 跨文档校对，无内容变更 |
 | v1.6 | 2026-06-04 | Xu Ziyang | **A-2 升级为双向对话**：§4.1 加 A-2 扩展说明；API 表 sentence 端点三连（POST/GET/sinceId 增量）；ADR-16（sentence schema 改 family + sender_role）、ADR-17（3 s polling 替代 WebSocket） |
+| v1.7 | 2026-06-13 | Xu Ziyang | **平台名与部署架构同步实际**：Supabase→Neon、Fly.io→Render（§2 顶层图、§3 技术栈表、§7 部署图全部更新）；文件存储改为本地 `uploads/` + 未来对象存储；ADR-1/ADR-4 记录平台变更，ADR-2 改为"应用层隔离（非 Supabase RLS）+ E2E/`/verify` 硬保证"，ADR-5/6/7 去 Supabase 专名改"托管 PG / 托管 Auth / 对象存储"。配套《Test Report v2.2》《Workflow v1.5》《Progress v2.0》 |
