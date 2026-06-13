@@ -169,7 +169,8 @@ public class ScheduleController {
 
     /** B-3: toggle a step's completion (0-based index). Children may call this. */
     @PutMapping("/instances/{id}/step")
-    public ResponseEntity<?> toggleStep(@PathVariable Long id,
+    public ResponseEntity<?> toggleStep(HttpServletRequest req,
+                                         @PathVariable Long id,
                                          @RequestBody Map<String, Object> body) {
         Number rawIdx = (Number) body.get("stepIndex");
         Boolean completed = (Boolean) body.get("completed");
@@ -181,6 +182,14 @@ public class ScheduleController {
         Optional<ScheduleInstance> instOpt = instances.findById(id);
         if (instOpt.isEmpty()) return ResponseEntity.notFound().build();
         ScheduleInstance inst = instOpt.get();
+
+        // Privacy: the instance must belong to a template in the caller's family,
+        // otherwise a known instance id from another family could be mutated.
+        String familyId = (String) req.getAttribute("familyId");
+        boolean ownedByFamily = templates.findById(inst.getTemplateId())
+            .map(t -> familyId != null && familyId.equals(t.getFamilyId()))
+            .orElse(false);
+        if (!ownedByFamily) return ResponseEntity.notFound().build();
 
         Set<Long> set = new TreeSet<>(Arrays.asList(inst.getCompletedStepIndices()));
         if (completed) set.add(idx); else set.remove(idx);
