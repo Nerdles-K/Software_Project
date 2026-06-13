@@ -2,6 +2,7 @@ package com.visitalk.pecs;
 
 import com.visitalk.model.Sentence;
 import com.visitalk.repository.SentenceRepository;
+import com.visitalk.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,9 +15,23 @@ import java.util.Map;
 public class SentenceController {
 
     private final SentenceRepository sentences;
+    private final UserRepository users;
 
-    public SentenceController(SentenceRepository sentences) {
+    public SentenceController(SentenceRepository sentences, UserRepository users) {
         this.sentences = sentences;
+        this.users = users;
+    }
+
+    /** Friendly display name from the sender's email local-part, e.g. "dad@x" → "Dad". */
+    private String displayName(Long userId) {
+        if (userId == null) return null;
+        return users.findById(userId).map(u -> {
+            String email = u.getEmail();
+            if (email == null || email.isBlank()) return null;
+            String local = email.contains("@") ? email.substring(0, email.indexOf('@')) : email;
+            if (local.isBlank()) return null;
+            return Character.toUpperCase(local.charAt(0)) + local.substring(1);
+        }).orElse(null);
     }
 
     /**
@@ -43,9 +58,11 @@ public class SentenceController {
             ids[i] = n.longValue();
         }
 
+        Long userId = (Long) req.getAttribute("userId");
         Sentence s = new Sentence();
         s.setFamilyId(familyId);
         s.setSenderRole(role);
+        s.setSenderName(displayName(userId));
         s.setCardIds(ids);
         return ResponseEntity.ok(sentences.insert(s));
     }

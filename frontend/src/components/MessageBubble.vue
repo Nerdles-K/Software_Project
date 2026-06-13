@@ -23,7 +23,12 @@ const timeStr = computed(() => {
   })
 })
 
-const senderLabel = computed(() => props.message.senderRole === 'child' ? 'Child' : 'Parent')
+const senderLabel = computed(() => {
+  const role = props.message.senderRole === 'child' ? 'Child' : 'Parent'
+  const name = props.message.senderName?.trim()
+  // Show the person's name when we have it (tells mum/dad or child A/B apart).
+  return name ? `${name} (${role})` : role
+})
 </script>
 
 <template>

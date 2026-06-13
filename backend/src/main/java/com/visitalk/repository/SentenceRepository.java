@@ -27,6 +27,7 @@ public class SentenceRepository {
         s.setId(rs.getLong("id"));
         s.setFamilyId(rs.getString("family_id"));
         s.setSenderRole(rs.getString("sender_role"));
+        s.setSenderName(rs.getString("sender_name"));
         Array arr = rs.getArray("card_ids");
         Object[] raw = arr == null ? new Object[0] : (Object[]) arr.getArray();
         Long[] ids = new Long[raw.length];
@@ -42,13 +43,14 @@ public class SentenceRepository {
         KeyHolder kh = new GeneratedKeyHolder();
         jdbc.update(con -> {
             PreparedStatement ps = con.prepareStatement(
-                "INSERT INTO sentence (family_id, sender_role, card_ids, created_at) VALUES (?, ?, ?, ?)",
+                "INSERT INTO sentence (family_id, sender_role, sender_name, card_ids, created_at) VALUES (?, ?, ?, ?, ?)",
                 new String[]{"id"});
             ps.setString(1, s.getFamilyId());
             ps.setString(2, s.getSenderRole());
+            ps.setString(3, s.getSenderName());
             Array a = con.createArrayOf("bigint", s.getCardIds() == null ? new Long[0] : s.getCardIds());
-            ps.setArray(3, a);
-            ps.setTimestamp(4, Timestamp.valueOf(now));
+            ps.setArray(4, a);
+            ps.setTimestamp(5, Timestamp.valueOf(now));
             return ps;
         }, kh);
         Number key = kh.getKey();

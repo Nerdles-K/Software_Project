@@ -7,6 +7,7 @@ export interface Sentence {
   id: number
   familyId: string
   senderRole: 'child' | 'parent'
+  senderName?: string | null
   cardIds: number[]
   createdAt: string
 }

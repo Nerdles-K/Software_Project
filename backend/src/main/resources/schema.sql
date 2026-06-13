@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS sentence (
     id BIGSERIAL PRIMARY KEY,
     family_id VARCHAR(50) NOT NULL,
     sender_role VARCHAR(10) NOT NULL CHECK (sender_role IN ('child', 'parent')),
+    sender_name VARCHAR(100),
     card_ids BIGINT[] NOT NULL DEFAULT '{}',
     created_at TIMESTAMP DEFAULT NOW()
 );

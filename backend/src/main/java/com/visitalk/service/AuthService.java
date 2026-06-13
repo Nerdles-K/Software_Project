@@ -50,12 +50,11 @@ public class AuthService {
         String familyId;
 
         if (joiningExisting) {
-            // Join an existing family via its code, with a one-parent-one-child invariant.
+            // Join an existing family via its code. A family may hold multiple
+            // parents (e.g. mum + dad) and multiple children; isolation between
+            // families is enforced elsewhere by family_id.
             if (!userRepository.existsByFamilyId(code)) {
                 throw new IllegalArgumentException("Invalid family code");
-            }
-            if (userRepository.findFirstByFamilyIdAndRole(code, role).isPresent()) {
-                throw new IllegalArgumentException("This family already has a " + role);
             }
             familyId = code;
         } else {

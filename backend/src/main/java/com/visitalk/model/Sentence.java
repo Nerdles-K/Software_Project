@@ -12,6 +12,7 @@ public class Sentence {
     private Long id;
     private String familyId;
     private String senderRole; // "child" | "parent"
+    private String senderName; // display name of the author (e.g. mum / dad / a child)
     private Long[] cardIds;
     private LocalDateTime createdAt;
 
@@ -21,6 +22,8 @@ public class Sentence {
     public void setFamilyId(String familyId) { this.familyId = familyId; }
     public String getSenderRole() { return senderRole; }
     public void setSenderRole(String senderRole) { this.senderRole = senderRole; }
+    public String getSenderName() { return senderName; }
+    public void setSenderName(String senderName) { this.senderName = senderName; }
     public Long[] getCardIds() { return cardIds; }
     public void setCardIds(Long[] cardIds) { this.cardIds = cardIds; }
     public LocalDateTime getCreatedAt() { return createdAt; }
