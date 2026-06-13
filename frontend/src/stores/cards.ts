@@ -42,10 +42,22 @@ const CATEGORY_EMOJI: Record<string, string> = Object.fromEntries(
 export function cardIcon(card: { imageUrl?: string | null; category: string }): string {
   const u = card.imageUrl || ''
   if (u.startsWith('emoji:')) return u.slice('emoji:'.length)
+  if (u.startsWith('text:')) return u.slice('text:'.length)
   return CATEGORY_EMOJI[card.category] || '📌'
 }
 export function isPhotoCard(card: { imageUrl?: string | null }): boolean {
   return !!card.imageUrl && card.imageUrl.startsWith('/uploads/')
+}
+/**
+ * Text-phrase pictogram (e.g. "text:I want") — a short daily-life expression that
+ * stands in for an emoji. Rendered as a word tile; its phrase doubles as the label,
+ * so render sites show it once instead of icon + duplicate word.
+ */
+export function isTextCard(card: { imageUrl?: string | null }): boolean {
+  return !!card.imageUrl && card.imageUrl.startsWith('text:')
+}
+export function cardText(card: { imageUrl?: string | null }): string {
+  return (card.imageUrl || '').slice('text:'.length)
 }
 
 export interface Card {

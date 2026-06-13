@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, watch, nextTick } from 'vue'
 import { VueDraggable } from 'vue-draggable-plus'
-import { useCardStore, BOARD_CATEGORIES, CATEGORIES, type Card } from '../../../stores/cards'
+import { useCardStore, BOARD_CATEGORIES, CATEGORIES, isTextCard, cardText, type Card } from '../../../stores/cards'
 import { assetUrl } from '../../../api/client'
 import ParentNav from '../../../components/ParentNav.vue'
 
@@ -18,6 +18,18 @@ const EMOJI_PALETTE: Record<string, string[]> = {
   Drink: ['🥛', '☕', '🧃', '🥤', '🍵', '🫖'],
   Play: ['⚽', '🧩', '🎨', '🎲', '🚗', '📚', '🏀', '🧸', '🎮', '🎵'],
   Feel: ['😊', '😢', '😠', '😨', '😴', '🤗', '😌', '🥰', '😟', '🤩'],
+}
+
+// Short daily-life English phrases — a second kind of pictogram alongside emoji.
+// Picking one builds a `text:` card whose phrase is both the tile and the label.
+const PHRASE_PALETTE: Record<string, string[]> = {
+  Need: ['I want', 'Help me', 'More please', 'All done', 'My turn', 'Stop', 'Wait', 'Yes', 'No', 'I need a break'],
+  Daily: ['Wake up', 'Brush teeth', 'Wash hands', 'Get dressed', 'Bath time', 'Bedtime', 'Clean up', 'Take medicine'],
+  Place: ['Go home', 'At school', 'Go outside', 'The shop', 'The doctor', 'Bathroom', 'In the car', 'Playground'],
+  Eat: ["I'm hungry", 'Snack time', 'More food', 'All finished', 'Yummy', 'No thanks'],
+  Drink: ["I'm thirsty", 'Water please', 'More drink', 'Milk please'],
+  Play: ["Let's play", 'My turn', 'Your turn', 'Play outside', 'Read a book', 'Listen to music'],
+  Feel: ["I'm happy", "I'm sad", "I'm angry", "I'm scared", "I'm tired", "I'm okay", 'I love you', "I'm excited"],
 }
 
 // What the card actually renders. Photo cards use `/uploads/...`; emoji cards use `emoji:🍎`.
@@ -40,7 +52,21 @@ const uploadError = ref('')
 // Category that the upload button targets (also reused by manual add form).
 const uploadCategory = ref<string>('Eat')
 
-const newCard = ref({ category: 'Eat', labelI18n: '', emoji: '🍎' })
+// icon.kind decides the pictogram type: 'emoji' (icon + word) or 'text' (word tile).
+const newCard = ref({
+  category: 'Eat',
+  labelI18n: '',
+  icon: { kind: 'emoji' as 'emoji' | 'text', value: '🍎' },
+})
+
+function pickEmoji(e: string) {
+  newCard.value.icon = { kind: 'emoji', value: e }
+}
+function pickPhrase(p: string) {
+  newCard.value.icon = { kind: 'text', value: p }
+  // The phrase is the card, so it doubles as the label — fill it in for the parent.
+  newCard.value.labelI18n = p
+}
 const labelInputRef = ref<HTMLInputElement | null>(null)
 const justCreatedFlash = ref('')
 
@@ -104,27 +130,28 @@ async function addCard() {
   const label = newCard.value.labelI18n.trim()
   if (!label) return
   const cat = newCard.value.category
-  const emoji = newCard.value.emoji
+  const { kind, value } = newCard.value.icon
   await store.createCard({
     category: cat,
     labelI18n: label,
-    imageUrl: `emoji:${emoji}`,
+    imageUrl: `${kind}:${value}`,
     isCustom: false,
   })
-  justCreatedFlash.value = `${emoji} ${label}`
+  justCreatedFlash.value = kind === 'emoji' ? `${value} ${label}` : `“${value}”`
   setTimeout(() => { justCreatedFlash.value = '' }, 1200)
-  // Keep category + emoji, clear label, re-focus for the next entry.
+  // Keep category + icon, clear label, re-focus for the next entry.
   newCard.value.labelI18n = ''
   await nextTick()
   labelInputRef.value?.focus()
 }
 
 function onCategoryChanged(newCat: string) {
-  // When parent changes category, default to that category's first emoji
-  // (unless they already picked one in this session).
+  // When parent changes category, if the current emoji isn't in the new
+  // category's palette, default to its first emoji. Text picks carry over.
   const palette = EMOJI_PALETTE[newCat] || []
-  if (palette.length && !palette.includes(newCard.value.emoji)) {
-    newCard.value.emoji = palette[0]
+  if (newCard.value.icon.kind === 'emoji'
+    && palette.length && !palette.includes(newCard.value.icon.value)) {
+    newCard.value.icon = { kind: 'emoji', value: palette[0] }
   }
 }
 
@@ -224,15 +251,27 @@ function cancelEdit() {
             class="px-4 py-3 rounded-xl border border-gray-300 text-lg" />
         </div>
 
-        <!-- Emoji picker -->
+        <!-- Pictogram picker: an emoji icon, or a short text-phrase tile. -->
         <div>
-          <p class="text-sm font-semibold text-gray-700 mb-2">Pick an icon</p>
+          <p class="text-sm font-semibold text-gray-700 mb-2">Pick an emoji</p>
           <div class="flex flex-wrap gap-2">
             <button v-for="e in EMOJI_PALETTE[newCard.category] || []" :key="e"
-              type="button" @click="newCard.emoji = e"
-              :class="newCard.emoji === e ? 'border-orange-500 bg-orange-50 ring-2 ring-orange-300' : 'border-gray-200 bg-white hover:bg-gray-50'"
+              type="button" @click="pickEmoji(e)"
+              :class="newCard.icon.kind === 'emoji' && newCard.icon.value === e ? 'border-orange-500 bg-orange-50 ring-2 ring-orange-300' : 'border-gray-200 bg-white hover:bg-gray-50'"
               class="w-12 h-12 rounded-xl border-2 text-2xl flex items-center justify-center">
               {{ e }}
+            </button>
+          </div>
+        </div>
+
+        <div v-if="(PHRASE_PALETTE[newCard.category] || []).length">
+          <p class="text-sm font-semibold text-gray-700 mb-2">…or pick a phrase</p>
+          <div class="flex flex-wrap gap-2">
+            <button v-for="p in PHRASE_PALETTE[newCard.category] || []" :key="p"
+              type="button" @click="pickPhrase(p)"
+              :class="newCard.icon.kind === 'text' && newCard.icon.value === p ? 'border-orange-500 bg-orange-50 ring-2 ring-orange-300 text-orange-700' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'"
+              class="px-3 py-2 rounded-xl border-2 text-sm font-semibold">
+              {{ p }}
             </button>
           </div>
         </div>
@@ -240,8 +279,9 @@ function cancelEdit() {
         <div class="flex items-center gap-3 pt-1">
           <div class="flex-1 text-sm text-gray-500">
             Preview:
-            <span class="text-2xl ml-2">{{ newCard.emoji }}</span>
-            <span class="ml-1 font-semibold text-gray-800">
+            <span v-if="newCard.icon.kind === 'emoji'" class="text-2xl ml-2">{{ newCard.icon.value }}</span>
+            <span v-else class="ml-2 inline-block px-2 py-0.5 rounded-lg bg-orange-50 border border-orange-200 font-bold text-orange-700">{{ newCard.icon.value }}</span>
+            <span v-if="newCard.icon.kind === 'emoji'" class="ml-1 font-semibold text-gray-800">
               {{ newCard.labelI18n || '(label)' }}
             </span>
           </div>
@@ -297,6 +337,8 @@ function cancelEdit() {
               <img v-if="isPhoto(card)"
                 :src="assetUrl(card.imageUrl)" :alt="card.labelI18n"
                 class="w-10 h-10 object-cover rounded-lg" />
+              <span v-else-if="isTextCard(card)"
+                class="px-2 py-0.5 rounded-lg bg-orange-50 border border-orange-200 text-sm font-bold text-orange-700">{{ cardText(card) }}</span>
               <span v-else class="text-2xl">{{ cardIconChar(card) }}</span>
               <input v-if="editingId === card.id"
                 ref="editInputRef"

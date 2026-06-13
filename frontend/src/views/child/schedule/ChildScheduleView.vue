@@ -65,6 +65,12 @@ function iconChar(card: Card): string {
   const map: Record<string, string> = { Eat: '🍎', Drink: '🥛', Play: '⚽', Feel: '😊' }
   return map[card.category] || '📌'
 }
+function isText(card: Card): boolean {
+  return !!card.imageUrl && card.imageUrl.startsWith('text:')
+}
+function textOf(card: Card): string {
+  return (card.imageUrl || '').slice('text:'.length)
+}
 
 const toggling = ref<number | null>(null)
 async function tick(index: number) {
@@ -141,6 +147,8 @@ function exit() {
           </span>
           <img v-if="isPhoto(card)" :src="assetUrl(card.imageUrl)" alt=""
             class="w-20 h-20 object-cover rounded-2xl" />
+          <span v-else-if="isText(card)"
+            class="w-20 h-20 flex items-center justify-center text-center text-xl font-bold text-gray-800 leading-tight">{{ textOf(card) }}</span>
           <span v-else class="text-6xl">{{ iconChar(card) }}</span>
 
           <!-- B-3 big checkbox -->

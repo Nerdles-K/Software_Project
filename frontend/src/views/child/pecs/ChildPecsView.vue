@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useCardStore, BOARD_CATEGORIES, type Card } from '../../../stores/cards'
+import { useCardStore, BOARD_CATEGORIES, isTextCard, cardText, type Card } from '../../../stores/cards'
 import { useDiaryStore } from '../../../stores/diary'
 import { useAuthStore } from '../../../stores/auth'
 import { assetUrl } from '../../../api/client'
@@ -106,6 +106,8 @@ async function onSaveSentence() {
       >
         <img v-if="isPhoto(card)" :src="assetUrl(card.imageUrl)" :alt="card.labelI18n"
           class="w-10 h-10 object-cover rounded-lg" />
+        <span v-else-if="isTextCard(card)"
+          class="text-base font-bold text-gray-800 text-center leading-tight px-1 max-w-[140px]">{{ cardText(card) }}</span>
         <span v-else class="text-3xl">{{ cardIconChar(card) }}</span>
         <button
           @click="onRemoveFromBar(i)"
@@ -179,9 +181,15 @@ async function onSaveSentence() {
         >
           <img v-if="isPhoto(card)" :src="assetUrl(card.imageUrl)" :alt="card.labelI18n"
             class="w-16 h-16 object-cover rounded-xl" />
+          <!-- Text-phrase pictogram: the word IS the card, shown large in place of an icon. -->
+          <span v-else-if="isTextCard(card)"
+            class="flex-1 flex items-center justify-center text-2xl font-bold text-gray-800 text-center leading-tight px-1">
+            {{ cardText(card) }}
+          </span>
           <span v-else class="text-5xl">{{ cardIconChar(card) }}</span>
-          <!-- Word label under the picture (authentic PECS: image + word). -->
-          <span class="mt-1.5 text-sm font-semibold text-gray-700 text-center leading-tight">
+          <!-- Word label under the picture (authentic PECS: image + word). Skipped for
+               text cards, where the phrase already stands in for the picture. -->
+          <span v-if="!isTextCard(card)" class="mt-1.5 text-sm font-semibold text-gray-700 text-center leading-tight">
             {{ card.labelI18n }}
           </span>
         </div>

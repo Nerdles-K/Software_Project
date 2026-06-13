@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useCardStore, cardIcon, isPhotoCard } from '../stores/cards'
+import { useCardStore, cardIcon, isPhotoCard, isTextCard, cardText } from '../stores/cards'
 import { useSentenceStore, type Sentence } from '../stores/sentences'
 import { assetUrl } from '../api/client'
 
@@ -45,8 +45,11 @@ const senderLabel = computed(() => {
           class="flex items-center gap-1.5 bg-white/60 rounded-lg px-2 py-1">
           <img v-if="isPhotoCard(card)" :src="assetUrl(card.imageUrl)" :alt="card.labelI18n"
             class="w-7 h-7 object-cover rounded" />
-          <span v-else class="text-2xl">{{ cardIcon(card) }}</span>
-          <span class="text-sm font-semibold text-gray-800">{{ card.labelI18n }}</span>
+          <span v-else-if="isTextCard(card)" class="text-sm font-semibold text-gray-800">{{ cardText(card) }}</span>
+          <template v-else>
+            <span class="text-2xl">{{ cardIcon(card) }}</span>
+            <span class="text-sm font-semibold text-gray-800">{{ card.labelI18n }}</span>
+          </template>
         </div>
         <span v-if="expanded.length === 0" class="italic text-gray-400 text-xs">
           (cards removed)

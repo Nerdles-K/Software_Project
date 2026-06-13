@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useCardStore, CATEGORIES, cardIcon, isPhotoCard, type Card } from '../stores/cards'
+import { useCardStore, CATEGORIES, cardIcon, isPhotoCard, isTextCard, cardText, type Card } from '../stores/cards'
 import { assetUrl } from '../api/client'
 
 const props = defineProps<{
@@ -72,10 +72,15 @@ async function submit() {
         class="relative flex items-center gap-2 px-3 py-2 rounded-xl shadow-sm transition-transform duration-200">
         <img v-if="isPhotoCard(c)" :src="assetUrl(c.imageUrl)" :alt="c.labelI18n"
           class="w-8 h-8 object-cover rounded" />
-        <span v-else class="text-2xl">{{ cardIcon(c) }}</span>
-        <span :class="dark ? 'text-slate-100' : 'text-gray-800'" class="text-sm font-semibold">
-          {{ c.labelI18n }}
+        <span v-else-if="isTextCard(c)" :class="dark ? 'text-slate-100' : 'text-gray-800'" class="text-sm font-semibold">
+          {{ cardText(c) }}
         </span>
+        <template v-else>
+          <span class="text-2xl">{{ cardIcon(c) }}</span>
+          <span :class="dark ? 'text-slate-100' : 'text-gray-800'" class="text-sm font-semibold">
+            {{ c.labelI18n }}
+          </span>
+        </template>
         <button @click="removeAt(i)"
           class="ml-1 w-6 h-6 rounded-full bg-red-100 text-red-500 flex items-center justify-center text-sm font-bold hover:bg-red-200"
           aria-label="Remove">×</button>
@@ -121,10 +126,17 @@ async function submit() {
           class="rounded-xl p-2 flex flex-col items-center justify-center transition-colors min-h-[92px]">
           <img v-if="isPhotoCard(c)" :src="assetUrl(c.imageUrl)" :alt="c.labelI18n"
             class="w-12 h-12 object-cover rounded mb-1" />
-          <span v-else class="text-4xl mb-1">{{ cardIcon(c) }}</span>
-          <span :class="dark ? 'text-slate-300' : 'text-gray-700'" class="text-xs font-semibold truncate w-full text-center">
-            {{ c.labelI18n }}
+          <span v-else-if="isTextCard(c)"
+            :class="dark ? 'text-slate-200' : 'text-gray-800'"
+            class="flex-1 flex items-center text-center text-sm font-bold leading-tight px-0.5">
+            {{ cardText(c) }}
           </span>
+          <template v-else>
+            <span class="text-4xl mb-1">{{ cardIcon(c) }}</span>
+            <span :class="dark ? 'text-slate-300' : 'text-gray-700'" class="text-xs font-semibold truncate w-full text-center">
+              {{ c.labelI18n }}
+            </span>
+          </template>
         </button>
       </div>
     </div>

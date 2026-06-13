@@ -152,6 +152,12 @@ function iconChar(card: Card | undefined): string {
 function isPhoto(card: Card | undefined): boolean {
   return !!card && !!card.imageUrl && card.imageUrl.startsWith('/uploads/')
 }
+function isText(card: Card | undefined): boolean {
+  return !!card && !!card.imageUrl && card.imageUrl.startsWith('text:')
+}
+function textOf(card: Card | undefined): string {
+  return (card?.imageUrl || '').slice('text:'.length)
+}
 </script>
 
 <template>
@@ -188,7 +194,7 @@ function isPhoto(card: Card | undefined): boolean {
               <span class="w-6 text-center font-bold text-gray-500">{{ i + 1 }}</span>
               <img v-if="isPhoto(cardsById.get(id))"
                 :src="assetUrl(cardsById.get(id)?.imageUrl)" class="w-10 h-10 object-cover rounded" alt="" />
-              <span v-else class="text-2xl">{{ iconChar(cardsById.get(id)) }}</span>
+              <span v-else-if="!isText(cardsById.get(id))" class="text-2xl">{{ iconChar(cardsById.get(id)) }}</span>
               <span class="flex-1 font-semibold text-gray-800 truncate">
                 {{ cardsById.get(id)?.labelI18n || `card #${id}` }}
               </span>
@@ -221,8 +227,9 @@ function isPhoto(card: Card | undefined): boolean {
               :disabled="draftSteps.length >= MAX_STEPS"
               class="bg-white rounded-xl border border-gray-200 p-2 flex flex-col items-center gap-1 hover:border-blue-400 hover:bg-blue-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
               <img v-if="isPhoto(card)" :src="assetUrl(card.imageUrl)" class="w-12 h-12 object-cover rounded" alt="" />
+              <span v-else-if="isText(card)" class="h-12 flex items-center text-center text-sm font-bold text-gray-800 leading-tight px-0.5">{{ textOf(card) }}</span>
               <span v-else class="text-3xl">{{ iconChar(card) }}</span>
-              <span class="text-xs text-gray-700 truncate w-full text-center">{{ card.labelI18n }}</span>
+              <span v-if="!isText(card)" class="text-xs text-gray-700 truncate w-full text-center">{{ card.labelI18n }}</span>
             </button>
           </div>
         </div>
@@ -286,6 +293,8 @@ function isPhoto(card: Card | undefined): boolean {
                 :title="cardsById.get(id)?.labelI18n">
                 <img v-if="isPhoto(cardsById.get(id))"
                   :src="assetUrl(cardsById.get(id)?.imageUrl)" class="w-7 h-7 object-cover rounded" alt="" />
+                <span v-else-if="isText(cardsById.get(id))"
+                  class="text-[9px] font-bold leading-none text-gray-700 text-center px-0.5 line-clamp-2 overflow-hidden">{{ textOf(cardsById.get(id)) }}</span>
                 <span v-else>{{ iconChar(cardsById.get(id)) }}</span>
               </span>
             </div>
