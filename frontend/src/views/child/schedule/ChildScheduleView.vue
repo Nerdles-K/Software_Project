@@ -77,11 +77,9 @@ async function tick(index: number) {
   }
 }
 
-function restart() {
-  // B-3: "All steps complete → celebration." User taps OK → reset by un-ticking all.
-  if (!view.value) return
-  const ids = [...completedSet.value]
-  for (const i of ids) sched.toggleStep(view.value.instance.id, i, false)
+function exit() {
+  // B-3: "All steps complete → celebration." User taps OK → leave the schedule.
+  router.push({ name: 'home' })
 }
 </script>
 
@@ -119,10 +117,10 @@ function restart() {
       <p class="text-[8rem] leading-none animate-bounce">🎉</p>
       <p class="text-3xl font-bold text-emerald-700 mt-2">All done!</p>
       <p class="text-lg text-gray-700 mt-2">Great job today.</p>
-      <button @click="restart"
+      <button @click="exit"
         class="mt-6 px-6 py-3 rounded-3xl bg-orange-400 text-white font-bold text-xl shadow"
         style="min-height: 56px; min-width: 180px;">
-        Start over
+        Exit
       </button>
     </div>
 
